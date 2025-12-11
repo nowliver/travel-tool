@@ -1,0 +1,181 @@
+---
+alwaysApply: true
+---
+# LiteTravel - Cursor Rules
+
+## Project Overview
+LiteTravel is a web-based travel planning application that combines map visualization with itinerary management. The core concept is "地图可视化规划 + 记事本式记录" (Map visualization planning + notebook-style recording).
+
+## Tech Stack
+- **Frontend Framework**: React 18+ with TypeScript
+- **Build Tool**: Vite 6
+- **Styling**: TailwindCSS
+- **State Management**: Zustand 5
+- **Map Integration**: @amap/amap-jsapi-loader (高德地图原生加载器)
+- **Drag & Drop**: @dnd-kit/core, @dnd-kit/sortable
+- **Icons**: Lucide React
+
+## Project Structure
+```
+src/
+  components/
+    itinerary/     # Left panel: Day tabs, node cards, search, drag & drop
+    layout/        # Shell component (left/right split layout)
+    map/           # Right panel: AMap container, markers, polylines
+  services/
+    mock/          # Mock implementations (MUST exist for all services)
+    *.ts           # Service exports (auto-fallback to mock if no env key)
+  store/           # Zustand stores (tripStore.ts)
+  types.ts         # Core domain types (PlanNode, DayPlan, TripMeta, etc.)
+  utils/           # Demo data, formatters, helpers
+```
+
+## Core Architectural Principles
+
+### 1. Mock-First Strategy
+- **CRITICAL**: All services MUST have mock implementations in `src/services/mock/`
+- Service exports (`mapService.ts`, `llmService.ts`) MUST check for env vars and fallback to mock
+- Mock data should use realistic coordinates (e.g., real Changsha coordinates, not 0,0)
+- Application MUST work without any API keys configured
+
+### 2. State Management with Zustand
+- Use Zustand for global state (`useTripStore`)
+- **IMPORTANT**: Avoid creating new arrays/objects in selectors to prevent infinite update loops
+  - ✅ Good: `const days = useTripStore((s) => s.days)`
+  - ❌ Bad: `const allNodes = useTripStore((s) => s.days.flatMap(...))`
+  - Instead, derive arrays in `useEffect` or component logic
+
+### 3. Map Integration
+- Use `@amap/amap-jsapi-loader` directly (NOT react-amap wrapper)
+- Directly manipulate `AMap.Map` instance for custom polylines and markers
+- Map markers should use different colors per day (dayColors array)
+- Always handle missing API key gracefully (show placeholder message)
+
+### 4. Commute Information
+- Commute info is a **computed property**, NOT stored as a separate node
+- Render `<CommuteInfo />` component between two consecutive nodes
+- Component should fetch route data from `mapService.getRoute()` when needed
+
+## Code Style Guidelines
+
+### TypeScript
+- Use strict TypeScript (`strict: true` in tsconfig)
+- Define all domain types in `src/types.ts`
+- Use interfaces for data structures, types for unions
+- Avoid `any` except for AMap runtime types (use `any` for `window.AMap`)
+
+### React Components
+- Use functional components with hooks
+- Prefer named exports: `export function ComponentName() {}`
+- Keep components focused and small
+- Extract reusable logic into custom hooks when appropriate
+
+### Naming Conventions
+- Components: PascalCase (`NodeCard.tsx`)
+- Files: Match component name
+- Functions/variables: camelCase
+- Types/interfaces: PascalCase
+- Constants: UPPER_SNAKE_CASE or camelCase for local constants
+
+### TailwindCSS
+- Use Tailwind utility classes exclusively
+- Prefer semantic color names: `slate-800`, `emerald-500`, `red-300`
+- Use responsive prefixes when needed
+- Keep custom CSS minimal (only in `index.css` for global styles)
+
+## Key Patterns
+
+### Adding New Features
+
+1. **New Service**:
+   - Create mock in `src/services/mock/mockServiceName.ts`
+   - Create export in `src/services/serviceName.ts` with env check
+   - Export interface and implementation
+
+2. **New Component**:
+   - Place in appropriate `components/` subdirectory
+   - Use TypeScript props interface
+   - Follow existing component patterns
+
+3. **New Store Action**:
+   - Add to `TripStoreActions` interface in `types.ts`
+   - Implement in `store/tripStore.ts` using Zustand `set()`
+   - Ensure immutability (create new objects/arrays)
+
+### Drag & Drop
+- Use `@dnd-kit` for all drag operations
+- Wrap draggable lists in `DndContext` and `SortableContext`
+- Use `useSortable` hook for individual items
+- Handle both same-day reordering and cross-day moves in `onDragEnd`
+
+### Map Updates
+- Listen to `days` changes in `useEffect` (not individual nodes)
+- Clear existing markers/polylines before adding new ones
+- Use `map.setFitView()` to show all markers after update
+- Different days should use different marker colors
+
+## Important Rules
+
+### DO:
+- ✅ Always provide mock implementations for services
+- ✅ Use Zustand selectors that return stable references
+- ✅ Handle missing API keys gracefully
+- ✅ Use realistic mock data (real city coordinates)
+- ✅ Keep components small and focused
+- ✅ Use TypeScript types from `types.ts`
+- ✅ Follow existing code patterns and structure
+- ✅ Test drag & drop across days
+- ✅ Ensure map updates when store changes
+
+### DON'T:
+- ❌ Create new arrays/objects in Zustand selectors
+- ❌ Hardcode API keys in source code
+- ❌ Use `react-amap` or other AMap wrappers
+- ❌ Store commute info as separate nodes
+- ❌ Skip mock implementations
+- ❌ Use `any` except for AMap runtime types
+- ❌ Break the mock-first strategy
+- ❌ Modify state directly (always use Zustand actions)
+
+## Environment Variables
+- `VITE_AMAP_KEY`: 高德地图 Web 服务 Key
+- `VITE_GOOGLE_API_KEY`: Google Gemini API Key (for LLM service)
+- `VITE_USE_MOCK`: Set to "true" to force mock mode
+
+## LocalStorage Keys
+- Format: `litetravel:plan:{cityName}`
+- Stores: `{ meta: TripMeta, days: DayPlan[] }`
+
+## Common Tasks
+
+### Adding a New Day
+- Use `addDay()` action from store
+- Automatically increments `day_index`
+- Optionally sets date based on previous day
+
+### Adding a Node from Search
+- Call `mapService.search(keyword)`
+- Create `PlanNode` from `MapSearchResult`
+- Use `addNode(dayIndex, node)`
+
+### Moving Nodes
+- Same day: `reorderNodes(dayIndex, oldIndex, newIndex)`
+- Cross day: `moveNodeAcrossDays(fromDayIndex, toDayIndex, nodeId, toIndex?)`
+
+### Saving/Loading Plans
+- Save: `localStorage.setItem('litetravel:plan:{city}', JSON.stringify({meta, days}))`
+- Load: Parse JSON and call `setTrip({meta, days})`
+
+## Testing Considerations
+- Application should work entirely in mock mode
+- Test drag & drop within and across days
+- Test map marker updates when nodes change
+- Test city change triggers map recenter
+- Test localStorage save/load functionality
+
+## Notes
+- The app is designed to work offline-first (with mocks)
+- Real API integration is optional and graceful degradation
+- Focus on user experience: smooth drag & drop, clear visual feedback
+- Map and list must stay in sync at all times
+
