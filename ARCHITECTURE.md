@@ -1,19 +1,161 @@
 # LiteTravel - Architecture Documentation
 
-> **Last Updated**: 2025-12-10  
-> **Version**: 1.2.0  
+> **Last Updated**: 2025-12-15  
+> **Version**: 2.1.0  
 > **Status**: Active Development
 
 ---
 
 ## 📐 System Overview
 
-LiteTravel is a web-based travel planning application combining map visualization with itinerary management. The architecture follows a **React + Zustand** state management pattern with **AMap (高德地图)** integration for geospatial features.
+LiteTravel is a **full-stack** travel planning application combining map visualization with itinerary management. The architecture follows a **React + Zustand** frontend with a **FastAPI** backend for user authentication and data persistence.
 
 ### Core Concepts
+- **Full-Stack Architecture**: React frontend + FastAPI backend + SQLite/PostgreSQL
+- **JWT Authentication**: Secure user sessions with token-based auth
+- **Hybrid Storage**: Local-first with optional cloud sync for logged-in users
+- **Multi-Source Content**: Aggregated data from AMap, Ctrip, Xiaohongshu (v2.1+)
 - **Mock-First Strategy**: All services have mock implementations for offline development
 - **POI-Driven Interaction**: Map interactions revolve around Points of Interest (POI)
 - **Service Layer Isolation**: UI components never call APIs directly
+
+---
+
+## 🔐 Backend Architecture (NEW in v2.0)
+
+### Technology Stack
+- **Framework**: Python FastAPI
+- **Database**: SQLite (dev) / PostgreSQL (prod)
+- **ORM**: SQLAlchemy
+- **Authentication**: JWT with bcrypt password hashing
+- **Validation**: Pydantic schemas
+
+### Backend Directory Structure
+```
+backend/
+├── app/
+│   ├── api/              # API Endpoints
+│   │   ├── auth.py       # POST /register, /login, /logout, GET /me
+│   │   ├── plans.py      # CRUD for /plans
+│   │   ├── content.py    # GET /content/search (v2.1+)
+│   │   └── deps.py       # get_current_user dependency
+│   ├── core/             # Core Configuration
+│   │   ├── config.py     # Environment settings (JWT_SECRET_KEY, DATABASE_URL, AMAP_KEY)
+│   │   └── security.py   # JWT encode/decode, password hashing
+│   ├── db/               # Database Layer
+│   │   └── base.py       # SQLAlchemy engine, session, Base class
+│   ├── models/           # SQLAlchemy Models
+│   │   ├── user.py       # User entity
+│   │   └── itinerary.py  # ItineraryPlan entity
+│   ├── schemas/          # Pydantic Schemas
+│   │   ├── user.py       # UserCreate, UserLogin, Token, UserResponse
+│   │   ├── itinerary.py  # ItineraryCreate, ItineraryUpdate, ItineraryResponse
+│   │   └── content.py    # ContentCategory, AttractionItem, HotelItem, etc. (v2.1+)
+│   └── services/         # Business Logic Services (v2.1+)
+│       ├── sources/      # Data source integrations
+│       │   ├── base.py   # BaseSource abstract class
+│       │   └── amap.py   # 高德地图 POI API
+│       ├── llm/          # LLM processing (future)
+│       └── content/      # Content aggregation (future)
+├── .env                  # Environment variables (not committed)
+├── main.py               # FastAPI app entry point
+├── pyproject.toml        # uv dependencies (v2.0+)
+└── uv.lock               # Dependency lock file
+```
+
+### Content Service Architecture (v2.1+)
+
+```
+用户请求 → /api/content/search
+    ↓
+ContentAPI (content.py)
+    ↓
+DataSource 层 (sources/)
+    ├── AmapSource (amap.py)     → 高德地图 POI API
+    ├── CtripSource (future)     → 携程酒店/机票
+    └── XiaohongshuSource (future) → 小红书攻略
+    ↓
+统一 Schema 转换 (schemas/content.py)
+    ↓
+(Future) LLM 整合层 (llm/)
+    ↓
+返回标准化响应
+```
+
+#### Content Categories
+
+| 类别 | 数据源 | Schema |
+|------|--------|--------|
+| 景点 (attraction) | 高德 + 小红书 | `AttractionItem` |
+| 住宿 (hotel) | 携程 + 美团 | `HotelItem` |
+| 美食 (dining) | 高德 + 小红书 | `DiningItem` |
+| 出行 (commute) | 携程 + 高德 | `CommuteItem` |
+
+### Data Models
+
+#### User
+```python
+class User:
+    id: str (UUID)
+    email: str (unique, indexed)
+    hashed_password: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+```
+
+#### ItineraryPlan
+```python
+class ItineraryPlan:
+    id: str (UUID)
+    user_id: str (ForeignKey -> User)
+    title: str
+    description: str (optional)
+    content_json: JSON  # Contains {meta, days} matching frontend TripStoreState
+    created_at: datetime
+    updated_at: datetime
+```
+
+### Authentication Flow
+```
+User Register/Login
+  ↓
+[POST /api/auth/register or /login]
+  ↓
+Backend validates credentials → bcrypt.verify()
+  ↓
+Generate JWT token with user_id in payload
+  ↓
+Return { access_token, user }
+  ↓
+Frontend stores token in localStorage
+  ↓
+Subsequent requests include: Authorization: Bearer <token>
+  ↓
+[get_current_user dependency] decodes token → returns User
+```
+
+### API Endpoints
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/register` | No | Create new user account |
+| POST | `/api/auth/login` | No | Authenticate and get token |
+| GET | `/api/auth/me` | Yes | Get current user info |
+| POST | `/api/auth/logout` | Yes | Logout (client discards token) |
+| GET | `/api/plans` | Yes | List user's itineraries |
+| POST | `/api/plans` | Yes | Create new itinerary |
+| GET | `/api/plans/{id}` | Yes | Get itinerary details |
+| PUT | `/api/plans/{id}` | Yes | Update itinerary |
+| DELETE | `/api/plans/{id}` | Yes | Delete itinerary |
+
+### Environment Variables
+```
+JWT_SECRET_KEY=<secret-key>      # MUST change in production
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440  # 24 hours
+DATABASE_URL=sqlite:///./litetravel.db
+```
 
 ---
 
@@ -180,6 +322,69 @@ User Selects → Execute corresponding Store action
 ---
 
 ## 🛠️ Service Layer
+
+### API Services (NEW in v2.0)
+
+Frontend services for backend communication located in `src/services/api/`:
+
+| Service | Path | Responsibility |
+|---------|------|----------------|
+| `apiClient` | `api/apiClient.ts` | Base HTTP client with JWT token management |
+| `authService` | `api/authService.ts` | Login, register, logout, session management |
+| `planService` | `api/planService.ts` | CRUD operations for itinerary plans |
+
+**API Client Features**:
+```typescript
+// Automatic token injection
+const headers = { Authorization: `Bearer ${token}` };
+
+// Token management
+setAuthToken(token)    // Store in localStorage
+removeAuthToken()      // Clear on logout
+isAuthenticated()      // Check if token exists
+```
+
+**Auth Service Interface**:
+```typescript
+interface AuthService {
+  register(credentials): Promise<User>;
+  login(credentials): Promise<User>;
+  logout(): Promise<void>;
+  getCurrentUser(): Promise<User | null>;
+  isAuthenticated(): boolean;
+}
+```
+
+**Plan Service Interface**:
+```typescript
+interface PlanService {
+  listPlans(): Promise<ItineraryListItem[]>;
+  getPlan(id): Promise<ItineraryPlan>;
+  createPlan(data): Promise<ItineraryPlan>;
+  updatePlan(id, data): Promise<ItineraryPlan>;
+  deletePlan(id): Promise<void>;
+  savePlan(id, title, meta, days): Promise<ItineraryPlan>;
+}
+```
+
+### Auth Store (`src/store/authStore.ts`)
+
+Zustand store for authentication state:
+```typescript
+interface AuthState {
+  user: User | null;
+  isLoading: boolean;
+  isInitialized: boolean;
+  error: string | null;
+}
+
+interface AuthActions {
+  login(email, password): Promise<void>;
+  register(email, password): Promise<void>;
+  logout(): Promise<void>;
+  initialize(): Promise<void>;  // Called on app mount
+}
+```
 
 ### Map Service (`src/services/mapService.ts`)
 

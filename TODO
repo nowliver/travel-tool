@@ -2,13 +2,32 @@
 
 ## LiteTravel 项目待办事项
 
-### 后端集成
-- [ ] 加入后端的用户个人行程计划的存储
-  - [ ] 设计用户认证系统（登录/注册）
-  - [ ] 设计行程计划数据模型（关联用户ID）
-  - [ ] 实现后端 API（保存/加载/删除行程）
-  - [ ] 前端集成：替换 localStorage 为 API 调用
+### 后端集成 
+- [x] 加入后端的用户个人行程计划的存储
+  - [x] 设计用户认证系统（登录/注册）
+  - [x] 设计行程计划数据模型（关联用户ID）
+  - [x] 实现后端 API（保存/加载/删除行程）
+  - [x] 前端集成：替换 localStorage 为 API 调用
   - [ ] 实现数据同步机制（离线/在线状态处理）
+
+### 多数据源内容服务 (进行中)
+- [x] Phase 0: 基础架构搭建
+  - [x] 创建 services 目录结构 (sources/, llm/, content/)
+  - [x] 定义统一数据 Schema (ContentCategory, AttractionItem, HotelItem, DiningItem, CommuteItem)
+  - [x] 创建高德地图 API 集成 (AmapSource)
+  - [x] 创建 Content API 端点 (/api/content/search)
+- [ ] Phase 1: 数据采集扩展
+  - [ ] 携程 API 集成 (住宿/出行)
+  - [ ] 小红书数据获取 (景点/美食攻略)
+- [ ] Phase 2: LLM 整合
+  - [ ] 数据清洗与标准化
+  - [ ] AI 摘要生成
+  - [ ] 标签化处理
+- [ ] Phase 3: 前端集成
+  - [ ] 景点页面 UI
+  - [ ] 住宿页面 UI
+  - [ ] 美食页面 UI
+  - [ ] 出行页面 UI
 
 ### 第三方数据接入
 - [ ] 接入携程、美团、小红书的 API 或通过爬虫获取信息

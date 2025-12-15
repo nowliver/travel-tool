@@ -13,15 +13,23 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { User, LogIn, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { useTripStore } from "../../store/tripStore";
+import { useAuthStore } from "../../store/authStore";
 import { DayTabs } from "./DayTabs";
 import { NodeCard } from "./NodeCard";
 import { CommuteInfo } from "./CommuteInfo";
 import { mapService, type CitySearchResult } from "../../services/mapService";
+import { planService } from "../../services/api";
 import type { MapSearchResult } from "../../services/mock/mockMapService";
 import type { PlanNode } from "../../types";
 
-export function ItineraryPanel() {
+interface ItineraryPanelProps {
+  onOpenAuth: () => void;
+  onOpenPlans: () => void;
+}
+
+export function ItineraryPanel({ onOpenAuth, onOpenPlans }: ItineraryPanelProps) {
   const meta = useTripStore((s) => s.meta);
   const days = useTripStore((s) => s.days);
   const setMeta = useTripStore((s) => s.setMeta);
@@ -53,6 +61,12 @@ export function ItineraryPanel() {
   const setConfirmedCity = useTripStore((s) => s.setConfirmedCity);
   const setHighlightedLocation = useTripStore((s) => s.setHighlightedLocation);
   const highlightedLocation = useTripStore((s) => s.highlightedLocation);
+  
+  // Auth state
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const [isSavingToCloud, setIsSavingToCloud] = useState(false);
+  const [cloudSaveMessage, setCloudSaveMessage] = useState<string>("");
 
   const PLAN_PREFIX = "litetravel:plan:";
   const sensors = useSensors(
@@ -103,12 +117,29 @@ export function ItineraryPanel() {
         JSON.stringify({ meta, days }, null, 2)
       );
       refreshSavedCities();
-      setSaveMessage("已保存");
+      setSaveMessage("已保存到本地");
       setTimeout(() => {
         setSaveMessage("");
       }, 3000);
     } catch (e) {
       console.error("Failed to save plan", e);
+    }
+  };
+
+  const handleSaveToCloud = async () => {
+    if (!user || !meta.city) return;
+    setIsSavingToCloud(true);
+    setCloudSaveMessage("");
+    try {
+      const title = `${meta.city}旅行计划`;
+      await planService.savePlan(null, title, meta, days);
+      setCloudSaveMessage("已同步到云端");
+      setTimeout(() => setCloudSaveMessage(""), 3000);
+    } catch (err) {
+      setCloudSaveMessage("同步失败");
+      setTimeout(() => setCloudSaveMessage(""), 3000);
+    } finally {
+      setIsSavingToCloud(false);
     }
   };
 
@@ -334,8 +365,47 @@ export function ItineraryPanel() {
     >
       <div className="flex flex-col h-full">
       <header className="px-4 pt-4 pb-3 border-b border-slate-800 space-y-2">
-        <div className="text-[11px] uppercase tracking-wide text-slate-400 mb-1.5">
-          LiteTravel · Demo
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="text-[11px] uppercase tracking-wide text-slate-400">
+            LiteTravel · Demo
+          </div>
+          {/* Auth Section */}
+          <div className="flex items-center gap-2">
+            {user ? (
+              <>
+                <button
+                  type="button"
+                  onClick={onOpenPlans}
+                  className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500 hover:text-blue-300 transition"
+                >
+                  <Cloud size={12} />
+                  我的行程
+                </button>
+                <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <User size={10} className="text-white" />
+                  </div>
+                  <span className="max-w-[80px] truncate">{user.email.split('@')[0]}</span>
+                  <button
+                    type="button"
+                    onClick={() => logout()}
+                    className="text-[10px] text-slate-500 hover:text-red-400 transition ml-1"
+                  >
+                    退出
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-500 transition"
+              >
+                <LogIn size={12} />
+                登录/注册
+              </button>
+            )}
+          </div>
         </div>
         {/* 城市选择与日期：响应式布局，窄宽度时自动堆叠 */}
         <div className="flex flex-wrap items-center gap-2">
@@ -501,17 +571,32 @@ export function ItineraryPanel() {
           </div>
         )}
         <div className="flex items-center justify-between gap-2 pt-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={handleSavePlan}
               className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition"
             >
-              保存当前城市计划
+              保存本地
             </button>
-            {saveMessage && (
+            {user && (
+              <button
+                type="button"
+                onClick={handleSaveToCloud}
+                disabled={isSavingToCloud || !meta.city}
+                className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-blue-500 text-white hover:bg-blue-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSavingToCloud ? (
+                  <Loader2 size={10} className="animate-spin" />
+                ) : (
+                  <Cloud size={10} />
+                )}
+                同步云端
+              </button>
+            )}
+            {(saveMessage || cloudSaveMessage) && (
               <span className="text-[11px] text-emerald-400 animate-pulse">
-                {saveMessage}
+                {saveMessage || cloudSaveMessage}
               </span>
             )}
           </div>
