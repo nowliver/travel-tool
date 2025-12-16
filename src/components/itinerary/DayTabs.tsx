@@ -24,28 +24,33 @@ function DayTab({ day, active, onChange }: DayTabProps) {
       type="button"
       ref={setNodeRef}
       onClick={() => onChange(day.day_index)}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+      className={`relative shrink-0 px-3.5 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-300 ease-out-expo z-10 ${
         active
-          ? "bg-emerald-500 text-slate-950"
-          : "bg-slate-800 text-slate-200 hover:bg-slate-700"
-      }`}
+          ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25"
+          : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-white/[0.04] hover:border-white/[0.08]"
+      } active:scale-95`}
     >
-      Day {day.day_index}
+      <span className="relative z-10 tracking-wide">Day {day.day_index}</span>
+      {active && (
+        <div className="absolute inset-0 rounded-lg bg-gradient-to-t from-emerald-600/20 to-transparent" />
+      )}
     </button>
   );
 }
 
 export function DayTabs({ days, activeDayIndex, onChange }: DayTabsProps) {
   return (
-    <div className="flex gap-2 px-4 py-3 border-b border-slate-800 bg-slate-900/80">
-      {days.map((day) => (
-        <DayTab
-          key={day.day_index}
-          day={day}
-          active={day.day_index === activeDayIndex}
-          onChange={onChange}
-        />
-      ))}
+    <div className="w-full overflow-x-auto py-2.5 no-scrollbar">
+      <div className="flex flex-nowrap gap-1.5 px-6">
+        {days.map((day) => (
+          <DayTab
+            key={day.day_index}
+            day={day}
+            active={day.day_index === activeDayIndex}
+            onChange={onChange}
+          />
+        ))}
+      </div>
     </div>
   );
 }

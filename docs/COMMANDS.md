@@ -2,6 +2,37 @@
 
 本文档记录项目开发中最常用的命令，方便快速查阅。
 
+```bash
+# 启动前端
+cd "d:\个人资料\MyCode\travel tool"
+npm install
+npm run dev
+
+# 启动后端
+cd "d:\个人资料\MyCode\travel tool\backend"
+uv sync
+uv run uvicorn main:app --reload --port 8000
+```
+
+---
+
+## 📦 后端命令 (uvicorn)
+
+### 环境安装
+```bash
+# 安装所有依赖（首次运行或新增依赖后）
+uvicorn main:app --reload --port 8000
+```
+
+### 开发
+```bash
+# 启动开发服务器（默认 http://localhost:8000）
+uvicorn main:app --reload --port 8000
+
+# 启动开发服务器并指定端口
+uv run uvicorn main:app --reload --port 8000
+```
+
 ---
 
 ## 📦 前端命令 (npm)

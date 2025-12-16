@@ -2,6 +2,26 @@
 
 FastAPI 后端服务，提供用户认证和行程计划持久化存储。
 
+## 前端设计系统 (v2.2)
+
+前端采用高端美学设计，统一使用 **Zinc 深色主题** + **Emerald 强调色**：
+
+- **配色**: Zinc grays (bg-zinc-900, bg-zinc-950) + Emerald accents (emerald-500/600)
+- **边框**: 超细边框 `border-white/[0.04]` ~ `border-white/[0.08]`
+- **圆角**: 统一使用 `rounded-xl` / `rounded-2xl`
+- **字体**: 精细字号 `text-[11px]` ~ `text-[13px]`，tracking-tight
+- **动效**: 200-300ms 过渡，hover 状态变化
+- **玻璃态**: `backdrop-blur-xl` + 半透明背景
+
+### 核心 UI 组件
+
+| 组件 | 用途 |
+|------|------|
+| `AnalysisCard` | LLM 分析结果展示（景点/美食/住宿/交通） |
+| `ContextMenu` | 右键菜单（支持子菜单） |
+| `NodeCard` | 行程节点卡片 |
+| `AuthModal` | 登录/注册弹窗 |
+
 ## 技术栈
 
 - **框架**: FastAPI
@@ -107,6 +127,44 @@ uv lock --upgrade
 - `page`: 页码 (默认 1)
 - `page_size`: 每页数量 (默认 20, 最大 50)
 
+### LLM 分析服务 (Analysis) - v2.1+
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/analyze/text` | 分析单条文本内容 |
+| POST | `/api/analyze/search` | 搜索并批量分析 |
+| GET | `/api/analyze/templates` | 获取可用 Prompt 模板 |
+| GET | `/api/analyze/status` | 获取 Pipeline 状态 |
+| POST | `/api/analyze/mock-demo` | 运行 Mock 数据演示 |
+
+**环境变量配置**:
+```env
+VOLCENGINE_API_KEY=your-api-key
+VOLCENGINE_MODEL=doubao-seed-1.6-flash
+```
+
+**分析文本请求示例**:
+```json
+POST /api/analyze/text
+{
+    "title": "长沙三日游攻略",
+    "content": "第一天去橘子洲头...",
+    "tags": ["长沙旅游", "攻略"],
+    "city": "长沙"
+}
+```
+
+**搜索并分析请求示例**:
+```json
+POST /api/analyze/search
+{
+    "keyword": "长沙美食",
+    "city": "长沙",
+    "source": "mock",
+    "limit": 5
+}
+```
+
 ### 行程计划 (Itinerary Plans)
 
 | Method | Endpoint | Description |
@@ -182,6 +240,36 @@ backend/
 ├── pyproject.toml     # 项目配置和依赖声明 (uv 管理)
 └── uv.lock            # 依赖锁定文件 (需提交)
 ```
+
+## 前端集成
+
+前端通过 `analyzeService` 调用后端 LLM 分析接口：
+
+```typescript
+// src/services/api/analyzeService.ts
+import { analyzeService } from './services/api/analyzeService';
+
+// 搜索并分析
+const response = await analyzeService.analyzeSearch({
+  keyword: "长沙景点",
+  city: "长沙",
+  source: "mock",  // 或 "xiaohongshu"
+  limit: 5
+});
+
+// 返回结果包含 sentiment, summary, tips, places 等
+response.data.results.forEach(result => {
+  console.log(result.summary);     // 摘要
+  console.log(result.sentiment);   // 情感: positive/negative/neutral
+  console.log(result.tips);        // 实用建议
+});
+```
+
+**已集成的视图组件**:
+- `AttractionsView` - 景点 AI 探索 + 收藏
+- `DiningView` - 美食探店推荐
+- `AccommodationView` - 住宿推荐
+- `CommuteView` - 出行交通攻略
 
 ## 安全注意事项
 

@@ -93,7 +93,7 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
   return (
     <div
       ref={menuRef}
-      className="fixed z-[9999] min-w-[160px] bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-2xl py-1.5 text-sm"
+      className="fixed z-[9999] min-w-[140px] bg-zinc-900/95 backdrop-blur-xl border border-white/[0.08] rounded-lg shadow-2xl py-1 text-[11px] font-medium animate-fade-in"
       style={{ left: adjustedPosition.x, top: adjustedPosition.y }}
     >
       {items.map((item) => (
@@ -107,18 +107,18 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
               }
             }}
             disabled={item.disabled}
-            className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${
+            className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors duration-150 ${
               item.disabled
-                ? "text-slate-500 cursor-not-allowed"
+                ? "text-zinc-600 cursor-not-allowed"
                 : item.danger
-                ? "text-red-400 hover:bg-red-500/20 hover:text-red-300"
-                : "text-slate-200 hover:bg-slate-700/80 hover:text-slate-50"
+                ? "text-red-400/90 hover:bg-red-500/10 hover:text-red-400"
+                : "text-zinc-300 hover:bg-white/[0.06] hover:text-zinc-100"
             }`}
           >
-            {item.icon && <span className="w-4 h-4 flex-shrink-0">{item.icon}</span>}
+            {item.icon && <span className="w-3.5 h-3.5 flex-shrink-0 opacity-70">{item.icon}</span>}
             <span className="flex-1">{item.label}</span>
             {item.children && item.children.length > 0 && (
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-3 h-3 text-zinc-500" />
             )}
           </button>
 
@@ -153,7 +153,7 @@ function SubMenu({ items, onClose }: SubMenuProps) {
   return (
     <div
       ref={subMenuRef}
-      className={`absolute top-0 min-w-[140px] bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-2xl py-1.5 ${
+      className={`absolute top-0 min-w-[120px] max-h-[280px] overflow-y-auto no-scrollbar bg-zinc-900/95 backdrop-blur-xl border border-white/[0.08] rounded-lg shadow-2xl py-1 text-[11px] ${
         position === "right" ? "left-full ml-1" : "right-full mr-1"
       }`}
     >
@@ -167,15 +167,15 @@ function SubMenu({ items, onClose }: SubMenuProps) {
             onClose();
           }}
           disabled={item.disabled}
-          className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${
+          className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors duration-150 ${
             item.disabled
-              ? "text-slate-500 cursor-not-allowed"
+              ? "text-zinc-600 cursor-not-allowed"
               : item.danger
-              ? "text-red-400 hover:bg-red-500/20 hover:text-red-300"
-              : "text-slate-200 hover:bg-slate-700/80 hover:text-slate-50"
+              ? "text-red-400/90 hover:bg-red-500/10 hover:text-red-400"
+              : "text-zinc-300 hover:bg-white/[0.06] hover:text-zinc-100"
           }`}
         >
-          {item.icon && <span className="w-4 h-4 flex-shrink-0">{item.icon}</span>}
+          {item.icon && <span className="w-3.5 h-3.5 flex-shrink-0 opacity-70">{item.icon}</span>}
           <span className="flex-1">{item.label}</span>
         </button>
       ))}

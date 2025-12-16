@@ -1,7 +1,7 @@
 # LiteTravel - Architecture Documentation
 
-> **Last Updated**: 2025-12-15  
-> **Version**: 2.1.0  
+> **Last Updated**: 2025-12-16  
+> **Version**: 2.3.0  
 > **Status**: Active Development
 
 ---
@@ -55,8 +55,11 @@ backend/
 │       ├── sources/      # Data source integrations
 │       │   ├── base.py   # BaseSource abstract class
 │       │   └── amap.py   # 高德地图 POI API
-│       ├── llm/          # LLM processing (future)
+│       ├── llm/          # LLM processing pipeline
 │       └── content/      # Content aggregation (future)
+├── scrapers/             # Data scrapers (moved from root)
+│   ├── xhs/              # Xiaohongshu adapter
+│   └── integration/      # Scraper service integration
 ├── .env                  # Environment variables (not committed)
 ├── main.py               # FastAPI app entry point
 ├── pyproject.toml        # uv dependencies (v2.0+)
@@ -90,6 +93,80 @@ DataSource 层 (sources/)
 | 住宿 (hotel) | 携程 + 美团 | `HotelItem` |
 | 美食 (dining) | 高德 + 小红书 | `DiningItem` |
 | 出行 (commute) | 携程 + 高德 | `CommuteItem` |
+
+### Scrapers Module (v2.1+)
+
+独立的爬虫模块，集成 MediaCrawler 获取小红书数据：
+
+```
+scrapers/
+├── xhs/                    # 小红书适配器
+│   ├── adapter.py          # XhsAdapter - MediaCrawler 封装
+│   ├── models.py           # XhsNote, XhsSearchResult
+│   └── config.py           # 爬虫配置
+├── integration/            # 与后端集成
+│   └── service.py          # ScraperService 统一接口
+└── data/                   # 缓存数据目录
+```
+
+**技术方案**:
+- 通过 subprocess 调用 MediaCrawler
+- 解析 MediaCrawler 输出的 JSON 数据
+- 转换为 travel-tool 统一 Schema
+- 支持结果缓存，减少重复请求
+
+**注意事项**:
+- 首次使用需通过 MediaCrawler 扫码登录
+- 仅用于学习研究，禁止商业用途
+- 控制请求频率，遵守平台规则
+
+### LLM Pipeline Architecture (v2.1+)
+
+ETL 流水线架构，用于处理多源旅游内容：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                         │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │              Pipeline Orchestrator                       ││
+│  │  (fetch_and_process, process_batch, process_note)       ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    Processing Layer                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │ TextCleaner  │  │ LLMProvider  │  │ResponseParser│      │
+│  │ (去Emoji/广告)│  │ (火山引擎)   │  │ (JSON解析)   │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+│                           │                                  │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │              PromptManager (模板管理)                    ││
+│  │  travel_analysis | dining_analysis | hotel_analysis     ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    Ingestion Layer                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │XiaohongshuDS │  │  CtripDS     │  │  MeituanDS   │      │
+│  │ (小红书)      │  │  (携程)      │  │  (美团)      │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**核心接口** (`interfaces.py`):
+- `DataSource`: 数据源抽象 (`fetch_notes`, `fetch_note_detail`)
+- `LLMProvider`: LLM 提供商抽象 (`chat_completion`)
+- `DataProcessor`: 数据处理抽象 (`clean`, `parse_response`)
+- `PromptManager`: Prompt 管理抽象 (`get_template`, `build_prompt`)
+
+**数据流**:
+1. DataSource 获取原始数据 → NoteData
+2. TextCleaner 清洗文本
+3. PromptManager 构建 Prompt
+4. LLMProvider 调用大模型
+5. ResponseParser 解析响应 → AnalysisResult
 
 ### Data Models
 
@@ -207,7 +284,54 @@ isDetailBarOpen: boolean
 | Component | Path | Features |
 |-----------|------|----------|
 | `ContextMenu` | `src/components/ui/ContextMenu.tsx` | Config-driven, sub-menu support, click-away dismiss |
-| `AttractionsView` | `src/components/views/AttractionsView.tsx` | Favorites list with locate/delete actions |
+| `AnalysisCard` | `src/components/ui/AnalysisCard.tsx` | Unified card for displaying LLM analysis results (attraction/dining/hotel/commute) |
+| `ConfirmModal` | `src/components/ui/ConfirmModal.tsx` | Apple-style confirm dialog (glass, rounded, consistent actions) |
+
+### Map UI Enhancements
+
+| Item | Path | Notes |
+|------|------|------|
+| `CustomMarker` | `src/components/map/CustomMarker.ts` | Helper for AMap marker HTML (`buildSelectedMarkerHtml`) |
+
+### UI Style Rules
+
+- `no-scrollbar` (defined in `src/index.css`): hide scrollbars but keep scrolling behavior (used in DayTabs and ContextMenu submenu).
+- Selected marker styling (defined in `src/index.css`):
+  - `.lt-selected-marker` (emerald halo + pulse)
+  - `.lt-selected-label` (glass label)
+  - `@keyframes lt-marker-pulse`
+
+### Auth Components
+
+| Component | Path | Features |
+|-----------|------|----------|
+| `AuthModal` | `src/components/auth/AuthModal.tsx` | Login/Register modal with emerald theme |
+| `PlansModal` | `src/components/auth/PlansModal.tsx` | Cloud-synced itinerary list modal |
+| `UserMenu` | `src/components/auth/UserMenu.tsx` | User dropdown menu with logout |
+
+### View Components (LLM 集成)
+
+| Component | Path | Features |
+|-----------|------|----------|
+| `AttractionsView` | `src/components/views/AttractionsView.tsx` | AI 探索 + 收藏 Tab，搜索景点攻略 |
+| `DiningView` | `src/components/views/DiningView.tsx` | 美食探店，LLM 分析推荐 |
+| `AccommodationView` | `src/components/views/AccommodationView.tsx` | 住宿推荐，酒店/民宿搜索 |
+| `CommuteView` | `src/components/views/CommuteView.tsx` | 出行交通，高铁/机票/地铁攻略 |
+
+**前端 LLM 集成架构**:
+```
+User Input (搜索关键词)
+  ↓
+[analyzeService.analyzeSearch()]
+  ↓
+POST /api/analyze/search { keyword, city, source, limit }
+  ↓
+Backend Pipeline: DataSource → TextCleaner → LLM → ResponseParser
+  ↓
+Return BatchAnalysisResult { results[], success_count, processing_time }
+  ↓
+[AnalysisResultCard] 展示分析结果 (sentiment, summary, tips, places)
+```
 
 ---
 

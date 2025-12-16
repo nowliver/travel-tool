@@ -46,11 +46,15 @@ export function ResizeHandle() {
   return (
     <div
       onMouseDown={onMouseDown}
-      className="relative cursor-col-resize group shrink-0 z-20"
+      className="relative cursor-col-resize group shrink-0 z-50 hover:z-[60]"
       style={{ width: RESIZE_HANDLE_WIDTH }}
     >
-      {/* 视觉分割线：居中显示，2px 宽 */}
-      <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-slate-700 group-hover:bg-emerald-500/60 transition-colors" />
+      {/* 视觉分割线：居中显示，1px 宽，带有微弱的光晕效果 */}
+      <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1px] bg-white/[0.04] group-hover:bg-emerald-500/60 transition-all duration-300 ease-out-expo">
+        <div className="absolute inset-0 w-[3px] -translate-x-[1px] h-full bg-emerald-500/0 group-hover:bg-emerald-500/20 blur-[4px] transition-all duration-300" />
+      </div>
+      {/* Hover indicator dot */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-white/0 group-hover:bg-emerald-500/40 transition-all duration-300 opacity-0 group-hover:opacity-100" />
     </div>
   );
 }

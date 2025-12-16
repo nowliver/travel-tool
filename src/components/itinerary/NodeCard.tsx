@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star, Navigation, Trash2 } from "lucide-react";
+import { Star, Navigation, Trash2, Clock, Wallet, FileText, MoreHorizontal } from "lucide-react";
 import type { PlanNode, NodeType } from "../../types";
 import { useTripStore } from "../../store/tripStore";
 import { ContextMenu, useContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
@@ -19,7 +19,14 @@ export function NodeCard({ node, dayIndex }: NodeCardProps) {
   // 右键菜单
   const { contextMenu, openContextMenu, closeContextMenu } = useContextMenu();
 
-  const badge =
+  const badgeColor =
+    node.type === "spot"
+      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+      : node.type === "hotel"
+      ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+      : "bg-orange-500/10 text-orange-400 border-orange-500/20";
+
+  const badgeLabel =
     node.type === "spot"
       ? "景点"
       : node.type === "hotel"
@@ -80,89 +87,129 @@ export function NodeCard({ node, dayIndex }: NodeCardProps) {
 
   return (
     <div
-      className="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 shadow-sm"
+      className="group relative bg-zinc-900/50 border border-white/[0.04] hover:bg-zinc-900/70 hover:border-white/[0.08] rounded-xl transition-all duration-300 backdrop-blur-sm shadow-card hover:shadow-card-hover"
       onContextMenu={handleContextMenu}
     >
-      <button
-        type="button"
-        className="w-full text-left"
+      <div 
+        className="p-3 cursor-pointer"
         onClick={() => setExpanded((v) => !v)}
       >
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1 min-w-0">
             <input
-              className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs text-slate-100 flex-1 min-w-0 truncate focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full bg-transparent border-none p-0 text-[13px] font-medium text-zinc-200 placeholder-zinc-600 focus:ring-0 focus:outline-none"
               value={node.name}
               onClick={(e) => e.stopPropagation()}
               onChange={(e) =>
                 updateNode(node.id, { name: e.target.value || node.name })
               }
             />
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-md border ${badgeColor} font-semibold tracking-wide`}>
+                {badgeLabel}
+              </span>
+              {(node.time || node.cost !== undefined && node.cost !== null) && (
+                <div className="flex items-center gap-2 text-[9px] text-zinc-500 font-mono">
+                  {node.time && (
+                    <span className="flex items-center gap-0.5">
+                      <Clock className="w-2.5 h-2.5" />
+                      {node.time}
+                    </span>
+                  )}
+                  {(node.cost !== undefined && node.cost !== null) && (
+                    <span className="flex items-center gap-0.5">
+                      <Wallet className="w-2.5 h-2.5" />
+                      ¥{node.cost}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          <span className="ml-2 inline-flex items-center rounded-full bg-slate-700 px-2 py-0.5 text-[10px] text-slate-200">
-            {badge}
-          </span>
+          
+          <button 
+            className="opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 rounded-md hover:bg-white/[0.08] text-zinc-500 hover:text-zinc-300"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleContextMenu(e);
+            }}
+          >
+            <MoreHorizontal className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <div className="flex items-center justify-between text-[10px] text-slate-400">
-          <span>
-            {node.time ? `出发时间 ${node.time}` : "点击展开编辑详情"}
-          </span>
-          <span>{expanded ? "收起 ▲" : "展开 ▼"}</span>
-        </div>
-      </button>
+      </div>
 
       {expanded && (
-        <div className="mt-2 space-y-2 border-t border-slate-700 pt-2">
-          <div className="flex items-center gap-2">
-            <label className="text-[10px] text-slate-400">类型</label>
-            <select
-              className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              value={node.type}
-              onChange={(e) => handleTypeChange(e.target.value)}
-            >
-              <option value="spot">景点</option>
-              <option value="hotel">酒店</option>
-              <option value="dining">餐饮</option>
-            </select>
+        <div className="px-3 pb-3 pt-0 animate-fade-in">
+          <div className="pt-2.5 border-t border-white/[0.04] space-y-2.5">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[9px] text-zinc-500 mb-1 block font-medium tracking-wide">类型</label>
+                <select
+                  className="w-full bg-zinc-950/60 border border-white/[0.04] rounded-lg px-2 py-1.5 text-[11px] text-zinc-300 focus:outline-none focus:border-emerald-500/30 appearance-none transition-colors"
+                  value={node.type}
+                  onChange={(e) => handleTypeChange(e.target.value)}
+                >
+                  <option value="spot">景点</option>
+                  <option value="hotel">酒店</option>
+                  <option value="dining">餐饮</option>
+                </select>
+              </div>
 
-            <label className="ml-2 text-[10px] text-slate-400">预算</label>
-            <input
-              type="number"
-              className="w-20 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              value={node.cost ?? ""}
-              onChange={(e) =>
-                updateNode(node.id, {
-                  cost: e.target.value ? Number(e.target.value) : undefined,
-                })
-              }
-            />
-          </div>
+              <div>
+                <label className="text-[9px] text-zinc-500 mb-1 block font-medium tracking-wide">出行时间</label>
+                <input
+                  type="time"
+                  className="w-full bg-zinc-950/60 border border-white/[0.04] rounded-lg px-2 py-1.5 text-[11px] text-zinc-300 focus:outline-none focus:border-emerald-500/30 font-mono transition-colors"
+                  value={node.time ?? ""}
+                  onChange={(e) =>
+                    updateNode(node.id, { time: e.target.value || undefined })
+                  }
+                />
+              </div>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <label className="text-[10px] text-slate-400">出行时间</label>
-            <input
-              type="time"
-              className="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              value={node.time ?? ""}
-              onChange={(e) =>
-                updateNode(node.id, { time: e.target.value || undefined })
-              }
-            />
-          </div>
+            <div>
+              <label className="text-[9px] text-zinc-500 mb-1 block font-medium tracking-wide">预算 (元)</label>
+              <input
+                type="number"
+                min={0}
+                className="w-full bg-zinc-950/60 border border-white/[0.04] rounded-lg px-2 py-1.5 text-[11px] text-zinc-300 focus:outline-none focus:border-emerald-500/30 font-mono transition-colors"
+                placeholder="0.0"
+                value={node.cost ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const num = val === '' ? undefined : Math.max(0, Number(val));
+                  updateNode(node.id, { cost: num });
+                }}
+              />
+            </div>
 
-          <div>
-            <label className="block text-[10px] text-slate-400 mb-1">
-              备注
-            </label>
-            <textarea
-              className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-100 resize-none focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              rows={2}
-              value={node.notes ?? ""}
-              onChange={(e) =>
-                updateNode(node.id, { notes: e.target.value || undefined })
-              }
-              placeholder="例如：已订全季酒店，380 元；预留 2 小时排队等候等"
-            />
+            <div>
+              <label className="text-[9px] text-zinc-500 mb-1 flex items-center gap-1 font-medium tracking-wide">
+                <FileText className="w-2.5 h-2.5" />
+                备注
+              </label>
+              <textarea
+                className="w-full bg-zinc-950/60 border border-white/[0.04] rounded-lg px-2 py-1.5 text-[11px] text-zinc-300 resize-none focus:outline-none focus:border-emerald-500/30 min-h-[50px] transition-colors"
+                rows={2}
+                value={node.notes ?? ""}
+                onChange={(e) =>
+                  updateNode(node.id, { notes: e.target.value || undefined })
+                }
+                placeholder="添加备注信息..."
+              />
+            </div>
+            
+            <div className="flex justify-end pt-0.5">
+              <button
+                onClick={handleDelete}
+                className="text-[9px] text-red-400/80 hover:text-red-400 px-2 py-1 hover:bg-red-500/10 rounded-md transition-all duration-200 flex items-center gap-1 font-medium"
+              >
+                <Trash2 className="w-2.5 h-2.5" />
+                删除节点
+              </button>
+            </div>
           </div>
         </div>
       )}

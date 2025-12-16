@@ -5,14 +5,19 @@ description = "FastAPI backend for LiteTravel - Travel planning application with
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "email-validator>=2.3.0",
     "fastapi==0.109.2",
     "httpx>=0.28.1",
+    "loguru>=0.7.3",
+    "openai>=2.11.0",
     "passlib[bcrypt]==1.7.4",
     "pydantic==2.6.1",
     "pydantic-settings==2.1.0",
+    "python-dotenv>=1.2.1",
     "python-jose[cryptography]==3.3.0",
     "python-multipart==0.0.9",
     "sqlalchemy==2.0.25",
+    "tenacity>=9.1.2",
     "uvicorn[standard]==0.27.1",
 ]
 

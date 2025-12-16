@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.db.base import init_db
-from app.api import auth, plans, content
+from app.api import auth, plans, content, analyze
 
 settings = get_settings()
 
@@ -23,6 +23,8 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:4698",  # Windsurf browser preview proxy
+        "http://localhost:4698",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -33,6 +35,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api")
 app.include_router(plans.router, prefix="/api")
 app.include_router(content.router, prefix="/api")
+app.include_router(analyze.router, prefix="/api")
 
 
 @app.on_event("startup")

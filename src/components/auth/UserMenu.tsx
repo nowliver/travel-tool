@@ -39,38 +39,38 @@ export function UserMenu({ onOpenPlans }: UserMenuProps) {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-white/[0.06] transition-colors"
       >
-        <div className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
-          <User size={14} className="text-white" />
+        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 flex items-center justify-center">
+          <User size={12} className="text-white" />
         </div>
-        <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
+        <span className="text-[12px] font-medium text-zinc-300 max-w-[100px] truncate">
           {user.email.split('@')[0]}
         </span>
-        <ChevronDown size={14} className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={12} className={`text-zinc-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-          <div className="px-3 py-2 border-b border-gray-100">
-            <p className="text-xs text-gray-500">已登录</p>
-            <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
+        <div className="absolute right-0 top-full mt-1 w-44 bg-zinc-900/95 backdrop-blur-xl rounded-lg shadow-2xl border border-white/[0.08] py-1 z-50 animate-fade-in">
+          <div className="px-3 py-2 border-b border-white/[0.06]">
+            <p className="text-[10px] text-zinc-500">已登录</p>
+            <p className="text-[12px] font-medium text-zinc-200 truncate">{user.email}</p>
           </div>
           
           <button
             onClick={handleOpenPlans}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-zinc-300 hover:bg-white/[0.06] transition-colors"
           >
-            <FolderOpen size={16} />
+            <FolderOpen size={14} />
             我的行程
           </button>
           
           <button
             onClick={handleLogout}
             disabled={isLoading}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-red-400/90 hover:bg-red-500/10 hover:text-red-400 transition-colors"
           >
-            <LogOut size={16} />
+            <LogOut size={14} />
             退出登录
           </button>
         </div>

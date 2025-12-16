@@ -4,6 +4,7 @@ import { useTripStore } from "../../store/tripStore";
 import { mapService } from "../../services/mapService";
 import { ContextMenu, useContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
 import { LocationDetailBar } from "./LocationDetailBar";
+import { buildSelectedMarkerHtml } from "./CustomMarker";
 import type { GeoLocation, PlanNode } from "../../types";
 
 declare global {
@@ -85,27 +86,15 @@ export function MapContainer() {
           });
 
           // 添加右键点击事件
-          map.on("rightclick", async (e: any) => {
+          map.on("rightclick", (e: any) => {
             const lnglat = e.lnglat;
             if (!lnglat) return;
 
             const location: GeoLocation = { lng: lnglat.lng, lat: lnglat.lat };
 
             // 获取地址信息
-            let name = `位置 (${lnglat.lng.toFixed(5)}, ${lnglat.lat.toFixed(5)})`;
-            let address: string | undefined;
-
-            try {
-              const result = await mapService.fetchAddressByLocation(lnglat.lng, lnglat.lat);
-              if (result.name) {
-                name = result.name;
-              }
-              address = result.address;
-            } catch (err) {
-              console.warn("Failed to fetch address", err);
-            }
-
-            setClickedLocation({ location, name, address });
+            const fallbackName = `位置 (${lnglat.lng.toFixed(5)}, ${lnglat.lat.toFixed(5)})`;
+            setClickedLocation({ location, name: fallbackName });
 
             // 修复坐标偏移：e.pixel 是相对于地图容器的坐标，需要转换为视口坐标
             const containerRect = containerRef.current?.getBoundingClientRect();
@@ -116,9 +105,27 @@ export function MapContainer() {
               // 打开右键菜单（使用正确的视口坐标）
               openContextMenu(
                 { clientX, clientY, preventDefault: () => {}, stopPropagation: () => {} } as React.MouseEvent,
-                { location, name, address }
+                { location, name: fallbackName }
               );
             }
+
+            // 异步补全地址信息，不阻塞菜单弹出
+            (async () => {
+              try {
+                const result = await mapService.fetchAddressByLocation(lnglat.lng, lnglat.lat);
+                setClickedLocation((prev) => {
+                  if (!prev) return prev;
+                  if (prev.location.lng !== location.lng || prev.location.lat !== location.lat) return prev;
+                  return {
+                    ...prev,
+                    name: result.name || prev.name,
+                    address: result.address,
+                  };
+                });
+              } catch (err) {
+                console.warn("Failed to fetch address", err);
+              }
+            })();
           });
 
           // 添加地图点击事件：用于清除高亮标记和关闭右键菜单
@@ -313,16 +320,7 @@ export function MapContainer() {
         ],
         title: highlightedLocation.name,
         map,
-        content: `<div style="transform: translate(-50%, -100%);">
-            <div style="width:20px;height:20px;border-radius:999px;background:#fbbf24;
-              box-shadow:0 0 0 3px rgba(15,23,42,0.9), 0 0 0 6px rgba(251,191,36,0.5);border:3px solid white;
-              animation: pulse 2s infinite;">
-            </div>
-            <div style="margin-top:4px;padding:4px 8px;background:rgba(15,23,42,0.95);border-radius:4px;
-              white-space:nowrap;font-size:12px;color:white;border:1px solid #fbbf24;">
-              ${highlightedLocation.name}
-            </div>
-          </div>`,
+        content: buildSelectedMarkerHtml(highlightedLocation.name),
         zIndex: 1000, // Higher z-index to show above other markers
       });
       highlightMarkerRef.current = marker;
@@ -424,7 +422,7 @@ export function MapContainer() {
       }`}
     >
       {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-[13px] pointer-events-none bg-zinc-950/50">
           {error ?? "正在加载地图..."}
         </div>
       )}

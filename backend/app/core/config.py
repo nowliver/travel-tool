@@ -16,9 +16,16 @@ class Settings(BaseSettings):
     # External APIs
     AMAP_KEY: str | None = None  # 高德地图 API Key
     
+    # LLM - 火山引擎 (Volcengine)
+    VOLCENGINE_API_KEY: str | None = None
+    VOLCENGINE_MODEL: str = "doubao-seed-1.6-flash"
+    VOLCENGINE_BASE_URL: str = "https://ark.cn-beijing.volces.com/api/v3"
+    VOLCENGINE_TEMPERATURE: float = 0.3
+    VOLCENGINE_MAX_TOKENS: int = 4096
+    
     # App Info
     APP_NAME: str = "LiteTravel API"
-    APP_VERSION: str = "2.0.0"
+    APP_VERSION: str = "2.1.0"
     
     class Config:
         env_file = ".env"

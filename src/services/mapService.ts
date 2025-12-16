@@ -103,7 +103,7 @@ const realMapService: MapServiceApi = {
 
     // 如果提供了bounds，过滤掉超出范围的结果
     if (bounds) {
-      results = results.filter((item) => {
+      results = results.filter((item: { location: { lng: number; lat: number } }) => {
         const distance = Math.sqrt(
           Math.pow(item.location.lng - bounds.center.lng, 2) +
             Math.pow(item.location.lat - bounds.center.lat, 2)

@@ -74,24 +74,24 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+      <div className="relative bg-zinc-900 border border-white/[0.08] rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden animate-fade-in">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-8 text-white">
+        <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-6 text-white">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/20 transition-colors"
+            className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-white/20 transition-colors"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-lg font-semibold tracking-tight">
             {mode === 'login' ? '欢迎回来' : '创建账户'}
           </h2>
-          <p className="text-blue-100 mt-1">
+          <p className="text-emerald-100 mt-0.5 text-[13px]">
             {mode === 'login' 
               ? '登录以同步您的行程计划' 
               : '注册以保存和同步您的行程'}
@@ -99,28 +99,28 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-3">
           {/* Error Alert */}
           {displayError && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              <AlertCircle size={16} className="shrink-0" />
+            <div className="flex items-center gap-2 p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-[12px]">
+              <AlertCircle size={14} className="shrink-0" />
               <span>{displayError}</span>
             </div>
           )}
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-[11px] font-medium text-zinc-400 mb-1">
               邮箱
             </label>
             <div className="relative">
-              <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-black"
+                className="w-full pl-9 pr-3 py-2 bg-zinc-800/60 border border-white/[0.06] rounded-lg focus:border-emerald-500/40 focus:bg-zinc-800 outline-none transition-all text-[13px] text-zinc-200 placeholder-zinc-500"
                 disabled={isLoading}
               />
             </div>
@@ -128,17 +128,17 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-[11px] font-medium text-zinc-400 mb-1">
               密码
             </label>
             <div className="relative">
-              <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={mode === 'register' ? '至少6位字符' : '••••••••'}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-black"
+                className="w-full pl-9 pr-3 py-2 bg-zinc-800/60 border border-white/[0.06] rounded-lg focus:border-emerald-500/40 focus:bg-zinc-800 outline-none transition-all text-[13px] text-zinc-200 placeholder-zinc-500"
                 disabled={isLoading}
               />
             </div>
@@ -147,17 +147,17 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           {/* Confirm Password (Register only) */}
           {mode === 'register' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-[11px] font-medium text-zinc-400 mb-1">
                 确认密码
               </label>
               <div className="relative">
-                <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="再次输入密码"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-black"
+                  className="w-full pl-9 pr-3 py-2 bg-zinc-800/60 border border-white/[0.06] rounded-lg focus:border-emerald-500/40 focus:bg-zinc-800 outline-none transition-all text-[13px] text-zinc-200 placeholder-zinc-500"
                   disabled={isLoading}
                 />
               </div>
@@ -168,19 +168,19 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[13px] font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-900/20 mt-4"
           >
-            {isLoading && <Loader2 size={18} className="animate-spin" />}
+            {isLoading && <Loader2 size={14} className="animate-spin" />}
             {mode === 'login' ? '登录' : '注册'}
           </button>
 
           {/* Switch Mode */}
-          <p className="text-center text-sm text-gray-600">
+          <p className="text-center text-[12px] text-zinc-500 pt-1">
             {mode === 'login' ? '还没有账户？' : '已有账户？'}
             <button
               type="button"
               onClick={switchMode}
-              className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
+              className="ml-1 text-emerald-500 hover:text-emerald-400 font-medium"
             >
               {mode === 'login' ? '立即注册' : '立即登录'}
             </button>

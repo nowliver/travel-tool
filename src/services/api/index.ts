@@ -13,3 +13,5 @@ export type {
   UpdatePlanRequest,
   TripContent 
 } from './planService';
+export { analyzeService } from './analyzeService';
+export type { AnalysisResult, BatchAnalysisResult } from './analyzeService';
