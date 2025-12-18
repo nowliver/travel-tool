@@ -5,7 +5,6 @@
 ```bash
 # 启动前端
 cd "d:\个人资料\MyCode\travel tool"
-npm install
 npm run dev
 
 # 启动后端

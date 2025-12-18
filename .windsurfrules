@@ -1,417 +1,473 @@
-# LiteTravel - Master Development Rules
+﻿# LiteTravel - 开发规范文档
 
-> **Version**: 2.0.0  
-> **Last Updated**: 2025-12-11  
-> **Toolchain**: uv + FastAPI + React + TypeScript
-
----
-
-## 🎯 Project Overview
-
-LiteTravel is a **full-stack** travel planning application combining map visualization with itinerary management. The architecture follows a **React + Zustand** frontend with a **FastAPI** backend for user authentication and data persistence.
-
-**Core Concept**: "地图可视化规划 + 记事本式记录 + 云端同步"
+> **版本**: 2.1.0  
+> **更新日期**: 2025-12-18  
+> **技术栈**: uv + FastAPI + React + TypeScript
 
 ---
 
-## 📚 The Triple Update Protocol
+##  任务启动协议 (Task Initiation Protocol)
 
-**CRITICAL**: Every task completion MUST update these three documents:
+**重要**: 接收到新任务时，必须先执行以下流程：
 
-1. **`ARCHITECTURE.md`** - System architecture, data flows, component maps
-   - Update when: Adding/modifying components, services, or data models
-   - Include: Component paths, interfaces, architectural decisions
+### 第一步：生成开发规范文档
 
-2. **`TODO.md`** - Task tracking and project roadmap
-   - Update when: Completing tasks, discovering new requirements
-   - Mark completed items with `[x]`, add new items as needed
+作为**拥有10年以上经验的全栈架构师和技术 Tech Lead**，在接收到用户需求后，必须先生成一份**结构化开发规范文档 (PRD for AI)** 供用户预览和修改。
 
-3. **`README.md`** - User-facing documentation
-   - Update when: Adding features, changing setup steps, modifying APIs
-   - Include: Installation steps, usage examples, configuration
+#### 开发规范文档模板
 
-**Enforcement**: Before marking any task as complete, verify all three documents are updated.
+```markdown
+## 1. 项目/功能概述 (Project Context)
+* **目标**: 用一句话清晰描述要解决的问题或实现的功能
+* **核心价值**: 用户的核心收益
+* **当前上下文**: 涉及的文件和模块（现有项目）/ 初始环境（新项目）
+
+## 2. 技术栈与约束 (Tech Stack & Constraints)
+* **前端**: React 18, TailwindCSS, TypeScript, Zustand
+* **后端**: Python FastAPI, SQLAlchemy, Pydantic
+* **数据存储**: SQLite (开发) / PostgreSQL (生产)
+* **关键库**: 列出必须使用的特定库
+* **代码风格**: 
+    * TypeScript 强类型
+    * 函数式编程优先
+    * 复杂逻辑必须包含注释
+    * 必须包含错误处理
+
+## 3. 系统架构与逻辑 (Architecture & Logic)
+* **核心实体**: 定义数据结构/Interface
+* **数据流**: 描述数据流向
+* **目录结构**: 推荐的文件树结构
+
+## 4. 分步开发计划 (Step-by-Step Plan)
+* **Phase 1: 基础建设**
+    * [Step 1.1]: 环境配置/依赖安装
+    * [Step 1.2]: 基础类型定义
+* **Phase 2: 核心逻辑**
+    * [Step 2.1]: 工具函数/Hook/Service 层
+    * [Step 2.2]: 单元测试
+* **Phase 3: 界面实现**
+    * [Step 3.1]: 构建基础组件
+    * [Step 3.2]: 组装页面与状态绑定
+* **Phase 4: 集成与优化**
+    * [Step 4.1]: API 对接与错误处理
+    * [Step 4.2]: 边缘情况处理
+
+## 5. 验收标准 (Acceptance Criteria)
+* 列出 3-5 个具体的可测试点
+* 性能要求或安全要求（可选）
+```
+
+### 第二步：等待用户确认
+
+1. 将开发规范文档展示给用户
+2. 等待用户审阅并提出修改意见
+3. 根据用户反馈调整文档
+4. 用户确认后，按照文档开始开发
+
+**注意**: 开发规范文档仅在对话中展示，无需写成文件。
 
 ---
 
-## 🛠️ Technology Stack
+##  项目概述
 
-### Frontend
-- **Framework**: React 18+ with TypeScript
-- **Build Tool**: Vite 6
-- **Styling**: TailwindCSS
-- **State Management**: Zustand 5
-- **Map Integration**: @amap/amap-jsapi-loader (高德地图)
-- **Drag & Drop**: @dnd-kit/core, @dnd-kit/sortable
-- **Icons**: Lucide React
+LiteTravel 是一个**全栈**旅行规划应用，结合地图可视化与行程管理。架构采用 **React + Zustand** 前端 + **FastAPI** 后端实现用户认证和数据持久化。
 
-### Backend
-- **Framework**: Python FastAPI
-- **Package Manager**: **uv** (MANDATORY - NO pip/venv)
-- **Database**: SQLite (dev) / PostgreSQL (prod)
+**核心理念**: "地图可视化规划 + 记事本式记录 + 云端同步"
+
+---
+
+##  三文档更新协议 (Triple Update Protocol)
+
+**关键**: 每个任务完成时必须更新以下三个文档：
+
+1. **ARCHITECTURE.md** - 系统架构、数据流、组件映射
+   - 更新时机：添加/修改组件、服务或数据模型时
+   - 包含：组件路径、接口、架构决策
+
+2. **TODO.md** - 任务追踪与项目路线图
+   - 更新时机：完成任务、发现新需求时
+   - 用 [x] 标记已完成项，按需添加新项
+
+3. **README.md** - 用户文档
+   - 更新时机：添加功能、修改配置步骤、修改 API 时
+   - 包含：安装步骤、使用示例、配置说明
+
+**执行要求**: 标记任务完成前，必须验证三个文档已更新。
+
+---
+
+##  技术栈
+
+### 前端
+- **框架**: React 18+ + TypeScript
+- **构建工具**: Vite 6
+- **样式**: TailwindCSS
+- **状态管理**: Zustand 5
+- **地图集成**: @amap/amap-jsapi-loader (高德地图)
+- **拖拽排序**: @dnd-kit/core, @dnd-kit/sortable
+- **图标**: Lucide React
+
+### 后端
+- **框架**: Python FastAPI
+- **包管理器**: **uv** (强制要求 - 禁止使用 pip/venv)
+- **数据库**: SQLite (开发) / PostgreSQL (生产)
 - **ORM**: SQLAlchemy
-- **Authentication**: JWT with bcrypt
-- **Validation**: Pydantic
+- **认证**: JWT + bcrypt
+- **验证**: Pydantic
 
 ---
 
-## 🔧 Python Environment Management (uv)
+##  Python 环境管理 (uv)
 
-### CRITICAL: Use uv ONLY
+### 关键：仅使用 uv
 
-**NEVER use pip, venv, or virtualenv. All Python operations MUST use uv.**
+**永远不要使用 pip、venv 或 virtualenv。所有 Python 操作必须使用 uv。**
 
-### Common Commands
+### 常用命令
 
 ```bash
-# Initialize project (already done)
-uv init --python ">=3.10"
-
-# Add production dependency
+# 添加生产依赖
 uv add <package>
 
-# Add development dependency
+# 添加开发依赖
 uv add --dev <package>
 
-# Install all dependencies
+# 安装所有依赖
 uv sync
 
-# Run Python script/command
+# 运行 Python 脚本/命令
 uv run python main.py
 uv run uvicorn main:app --reload
 
-# Run tests
+# 运行测试
 uv run pytest
 
-# Update dependencies
+# 更新依赖
 uv lock --upgrade
 ```
 
-### Project Structure
+### 后端开发规则
 
-```
-backend/
-├── pyproject.toml    # Project metadata & dependencies (uv managed)
-├── uv.lock           # Lock file (DO NOT edit manually)
-├── .venv/            # Virtual environment (auto-managed by uv)
-├── main.py           # FastAPI entry point
-└── app/
-    ├── api/          # API endpoints
-    ├── core/         # Config & security
-    ├── db/           # Database layer
-    ├── models/       # SQLAlchemy models
-    └── schemas/      # Pydantic schemas
-```
-
-### Rules for Backend Development
-
-1. **Adding Dependencies**: ALWAYS use `uv add <package>`
-2. **Running Code**: ALWAYS use `uv run <command>`
-3. **No Manual Edits**: NEVER edit `pyproject.toml` dependencies manually
-4. **Lock File**: Commit `uv.lock` to version control
-5. **Environment**: Let uv manage `.venv` automatically
+1. **添加依赖**: 始终使用 uv add <package>
+2. **运行代码**: 始终使用 uv run <command>
+3. **禁止手动编辑**: 不要手动编辑 pyproject.toml 的依赖部分
+4. **锁定文件**: 将 uv.lock 提交到版本控制
+5. **虚拟环境**: 让 uv 自动管理 .venv
 
 ---
 
-## 📐 Project Structure
+##  项目结构
 
-### Frontend (`src/`)
+### 前端 (src/)
 
 ```
 src/
   components/
-    auth/          # Authentication UI (AuthModal, UserMenu, PlansModal)
-    itinerary/     # Left panel: Day tabs, node cards, search, drag & drop
-    layout/        # Shell component (left/right split layout)
-    map/           # Right panel: AMap container, markers, polylines
-    ui/            # Reusable UI components
-    views/         # Feature views (AttractionsView, etc.)
+    auth/          # 认证 UI (AuthModal, UserMenu, PlansModal)
+    itinerary/     # 左侧面板：日期标签、节点卡片、搜索、拖拽排序
+    layout/        # Shell 组件（左右分栏布局）
+    map/           # 右侧面板：高德地图容器、标记、折线
+    ui/            # 可复用 UI 组件
+    views/         # 功能视图 (AttractionsView 等)
   services/
-    api/           # Backend API clients (apiClient, authService, planService)
-    mock/          # Mock implementations (MUST exist for all services)
-    *.ts           # Service exports (auto-fallback to mock if no env key)
+    api/           # 后端 API 客户端 (apiClient, authService, planService)
+    mock/          # Mock 实现（所有服务必须存在）
+    *.ts           # 服务导出（无环境变量时自动回退到 mock）
   store/
-    tripStore.ts   # Trip state management
-    authStore.ts   # Authentication state
-  types.ts         # Core domain types
-  utils/           # Demo data, formatters, helpers
+    tripStore.ts   # 行程状态管理
+    authStore.ts   # 认证状态
+  types.ts         # 核心领域类型
+  utils/           # 演示数据、格式化工具、辅助函数
 ```
 
-### Backend (`backend/`)
+### 后端 (backend/)
 
-See structure above in uv section.
-
----
-
-## 🏗️ Core Architectural Principles
-
-### 1. Mock-First Strategy (Frontend)
-- **CRITICAL**: All frontend services MUST have mock implementations in `src/services/mock/`
-- Service exports MUST check for env vars and fallback to mock
-- Mock data should use realistic coordinates (real Changsha coordinates, not 0,0)
-- Application MUST work without any API keys configured
-
-### 2. State Management with Zustand
-- Use Zustand for global state (`useTripStore`, `useAuthStore`)
-- **IMPORTANT**: Avoid creating new arrays/objects in selectors to prevent infinite loops
-  - ✅ Good: `const days = useTripStore((s) => s.days)`
-  - ❌ Bad: `const allNodes = useTripStore((s) => s.days.flatMap(...))`
-  - Instead, derive arrays in `useEffect` or component logic
-
-### 3. Backend API Design
-- **RESTful**: Follow REST conventions for all endpoints
-- **JWT Auth**: Use `get_current_user` dependency for protected routes
-- **Error Handling**: Return standard HTTP status codes (401, 403, 404, 500)
-- **Validation**: Use Pydantic schemas for request/response validation
-- **Async**: Prefer async/await for I/O operations
-
-### 4. Map Integration
-- Use `@amap/amap-jsapi-loader` directly (NOT react-amap wrapper)
-- Directly manipulate `AMap.Map` instance for custom polylines and markers
-- Map markers should use different colors per day (dayColors array)
-- Always handle missing API key gracefully (show placeholder message)
+```
+backend/
+ pyproject.toml    # 项目元数据和依赖（uv 管理）
+ uv.lock           # 锁定文件（禁止手动编辑）
+ .venv/            # 虚拟环境（uv 自动管理）
+ main.py           # FastAPI 入口
+ app/
+     api/          # API 端点
+     core/         # 配置和安全
+     db/           # 数据库层
+     models/       # SQLAlchemy 模型
+     schemas/      # Pydantic 模式
+```
 
 ---
 
-## 💻 Code Style Guidelines
+##  核心架构原则
 
-### TypeScript (Frontend)
-- Use strict TypeScript (`strict: true` in tsconfig)
-- Define all domain types in `src/types.ts`
-- Use interfaces for data structures, types for unions
-- Avoid `any` except for AMap runtime types
+### 1. Mock 优先策略（前端）
+- **关键**: 所有前端服务必须在 src/services/mock/ 中有 mock 实现
+- 服务导出必须检查环境变量并回退到 mock
+- Mock 数据应使用真实坐标（真实的长沙坐标，而非 0,0）
+- 应用必须在未配置任何 API 密钥时正常工作
 
-### Python (Backend)
-- Follow PEP 8 style guide
-- Use type hints for all function signatures
-- Use async/await for I/O operations
-- Keep functions focused and small
-- Use Pydantic for data validation
+### 2. Zustand 状态管理
+- 使用 Zustand 管理全局状态（useTripStore, useAuthStore）
+- **重要**: 避免在选择器中创建新数组/对象，防止无限循环
+  -  正确: const days = useTripStore((s) => s.days)
+  -  错误: const allNodes = useTripStore((s) => s.days.flatMap(...))
+  - 应在 useEffect 或组件逻辑中派生数组
 
-### React Components
-- Use functional components with hooks
-- Prefer named exports: `export function ComponentName() {}`
-- Keep components focused and small
-- Extract reusable logic into custom hooks
+### 3. 后端 API 设计
+- **RESTful**: 所有端点遵循 REST 规范
+- **JWT 认证**: 受保护路由使用 get_current_user 依赖
+- **错误处理**: 返回标准 HTTP 状态码 (401, 403, 404, 500)
+- **验证**: 使用 Pydantic 模式验证请求/响应
+- **异步**: I/O 操作优先使用 async/await
 
-### Naming Conventions
-- **Components**: PascalCase (`NodeCard.tsx`, `AuthModal.tsx`)
-- **Files**: Match component/module name
-- **Functions/variables**: camelCase (TS), snake_case (Python)
-- **Types/interfaces**: PascalCase
-- **Constants**: UPPER_SNAKE_CASE
+### 4. 地图集成
+- 直接使用 @amap/amap-jsapi-loader（不使用 react-amap 包装器）
+- 直接操作 AMap.Map 实例实现自定义折线和标记
+- 地图标记应按日期使用不同颜色（dayColors 数组）
+- 始终优雅处理缺少 API 密钥的情况（显示占位消息）
+
+---
+
+##  代码风格指南
+
+### TypeScript（前端）
+- 使用严格 TypeScript（tsconfig 中 strict: true）
+- 在 src/types.ts 中定义所有领域类型
+- 数据结构使用 interface，联合类型使用 type
+- 避免使用 any（AMap 运行时类型除外）
+
+### Python（后端）
+- 遵循 PEP 8 风格指南
+- 所有函数签名使用类型提示
+- I/O 操作使用 async/await
+- 保持函数专注且小巧
+- 使用 Pydantic 进行数据验证
+
+### React 组件
+- 使用函数式组件和 hooks
+- 优先使用命名导出：export function ComponentName() {}
+- 保持组件专注且小巧
+- 将可复用逻辑提取到自定义 hooks
+
+### 命名规范
+- **组件**: PascalCase (NodeCard.tsx, AuthModal.tsx)
+- **文件**: 与组件/模块名匹配
+- **函数/变量**: camelCase (TS), snake_case (Python)
+- **类型/接口**: PascalCase
+- **常量**: UPPER_SNAKE_CASE
 
 ### TailwindCSS
-- Use Tailwind utility classes exclusively
-- Prefer semantic color names: `slate-800`, `emerald-500`, `red-300`
-- Use responsive prefixes when needed
-- Keep custom CSS minimal (only in `index.css`)
+- 专用 Tailwind 工具类
+- 优先使用语义化颜色名：slate-800, emerald-500, 
+ed-300
+- 必要时使用响应式前缀
+- 自定义 CSS 最小化（仅在 index.css 中）
 
 ---
 
-## 🔐 Security Best Practices
+##  安全最佳实践
 
-### Backend
-1. **Never hardcode secrets** - Use `.env` files (excluded from git)
-2. **Password hashing** - Always use bcrypt with salt
-3. **JWT tokens** - Set reasonable expiration times
-4. **Input validation** - Use Pydantic schemas for all inputs
-5. **SQL injection** - Use SQLAlchemy ORM (never raw SQL)
+### 后端
+1. **永不硬编码密钥** - 使用 .env 文件（已排除在 git 之外）
+2. **密码哈希** - 始终使用带盐的 bcrypt
+3. **JWT 令牌** - 设置合理的过期时间
+4. **输入验证** - 所有输入使用 Pydantic 模式
+5. **SQL 注入** - 使用 SQLAlchemy ORM（永不使用原始 SQL）
 
-### Frontend
-1. **Token storage** - Store JWT in localStorage (consider httpOnly cookies for production)
-2. **API errors** - Handle 401/403 gracefully, redirect to login
-3. **Sensitive data** - Never log tokens or passwords
-4. **CORS** - Backend CORS configured for specific origins only
+### 前端
+1. **令牌存储** - 将 JWT 存储在 localStorage（生产环境考虑 httpOnly cookies）
+2. **API 错误** - 优雅处理 401/403，重定向到登录
+3. **敏感数据** - 永不记录令牌或密码
+4. **CORS** - 后端 CORS 仅配置特定源
 
 ---
 
-## 🔄 Development Workflow
+##  开发工作流
 
-### Starting Development
+### 启动开发
 
-**Backend**:
+**后端**:
 ```bash
 cd backend
-uv sync                    # Install dependencies
+uv sync                    # 安装依赖
 uv run uvicorn main:app --reload --port 8000
 ```
 
-**Frontend**:
+**前端**:
 ```bash
-npm install                # First time only
-npm run dev                # Start Vite dev server
+npm install                # 仅首次
+npm run dev                # 启动 Vite 开发服务器
 ```
 
-### Adding a New Feature
+### 添加新功能
 
-1. **Plan**: Update `TODO.md` with new task
-2. **Implement**: Write code following patterns
-3. **Test**: Verify functionality works
-4. **Document**: Update `ARCHITECTURE.md` and `README.md`
-5. **Commit**: Commit with descriptive message
+1. **规划**: 在 TODO.md 中更新新任务
+2. **实现**: 按照模式编写代码
+3. **测试**: 验证功能正常工作
+4. **文档**: 更新 ARCHITECTURE.md 和 README.md
+5. **提交**: 使用描述性消息提交
 
-### Adding Backend Dependencies
+### 添加后端依赖
 
 ```bash
 cd backend
-uv add <package>           # Production dependency
-uv add --dev <package>     # Development dependency
-uv sync                    # Update lock file
+uv add <package>           # 生产依赖
+uv add --dev <package>     # 开发依赖
+uv sync                    # 更新锁定文件
 ```
 
-### Backend API Development
+### 后端 API 开发
 
-1. **Define Schema**: Create Pydantic models in `app/schemas/`
-2. **Create Model**: Define SQLAlchemy model in `app/models/`
-3. **Write Endpoint**: Implement route in `app/api/`
-4. **Add Auth**: Use `Depends(get_current_user)` for protected routes
-5. **Test**: Use Swagger UI at `http://localhost:8000/docs`
-
----
-
-## 📋 Key Patterns
-
-### Frontend: Adding New Service
-
-1. Create mock in `src/services/mock/mockServiceName.ts`
-2. Create export in `src/services/serviceName.ts` with env check
-3. Export interface and implementation
-
-### Frontend: Adding New Component
-
-1. Place in appropriate `components/` subdirectory
-2. Use TypeScript props interface
-3. Follow existing component patterns
-4. Use Zustand for state when needed
-
-### Backend: Adding New Endpoint
-
-1. Define Pydantic schemas in `app/schemas/`
-2. Create route in `app/api/`
-3. Add to router in `main.py`
-4. Test with Swagger UI
-
-### Drag & Drop
-
-- Use `@dnd-kit` for all drag operations
-- Wrap draggable lists in `DndContext` and `SortableContext`
-- Use `useSortable` hook for individual items
-- Handle both same-day reordering and cross-day moves
+1. **定义模式**: 在 app/schemas/ 中创建 Pydantic 模型
+2. **创建模型**: 在 app/models/ 中定义 SQLAlchemy 模型
+3. **编写端点**: 在 app/api/ 中实现路由
+4. **添加认证**: 受保护路由使用 Depends(get_current_user)
+5. **测试**: 在 http://localhost:8000/docs 使用 Swagger UI
 
 ---
 
-## ✅ Important Rules
+##  关键模式
 
-### DO:
-- ✅ Use `uv` for ALL Python operations
-- ✅ Update Triple Docs (ARCHITECTURE.md, TODO.md, README.md) after each task
-- ✅ Always provide mock implementations for frontend services
-- ✅ Use Zustand selectors that return stable references
-- ✅ Handle missing API keys gracefully
-- ✅ Use type hints in Python, strict TypeScript in frontend
-- ✅ Follow RESTful conventions for APIs
-- ✅ Use JWT for authentication
-- ✅ Validate all inputs with Pydantic
-- ✅ Keep components small and focused
-- ✅ Test drag & drop across days
-- ✅ Ensure map updates when store changes
+### 前端：添加新服务
 
-### DON'T:
-- ❌ Use pip, venv, or virtualenv (USE UV ONLY)
-- ❌ Skip Triple Update Protocol
-- ❌ Create new arrays/objects in Zustand selectors
-- ❌ Hardcode API keys or secrets
-- ❌ Use `react-amap` or other AMap wrappers
-- ❌ Store commute info as separate nodes
-- ❌ Skip mock implementations
-- ❌ Use `any` in TypeScript (except AMap runtime)
-- ❌ Break the mock-first strategy
-- ❌ Modify state directly (always use Zustand actions)
-- ❌ Commit `.env` files to git
-- ❌ Use raw SQL queries (use SQLAlchemy ORM)
+1. 在 src/services/mock/mockServiceName.ts 中创建 mock
+2. 在 src/services/serviceName.ts 中创建带环境检查的导出
+3. 导出接口和实现
+
+### 前端：添加新组件
+
+1. 放置在适当的 components/ 子目录
+2. 使用 TypeScript props 接口
+3. 遵循现有组件模式
+4. 需要时使用 Zustand 管理状态
+
+### 后端：添加新端点
+
+1. 在 app/schemas/ 中定义 Pydantic 模式
+2. 在 app/api/ 中创建路由
+3. 在 main.py 中添加到路由器
+4. 使用 Swagger UI 测试
+
+### 拖拽排序
+
+- 所有拖拽操作使用 @dnd-kit
+- 用 DndContext 和 SortableContext 包装可拖拽列表
+- 单个项目使用 useSortable hook
+- 同时处理同天重排和跨天移动
 
 ---
 
-## 🌐 Environment Variables
+##  重要规则
 
-### Frontend (`.env.local`)
+### 应该做：
+-  所有 Python 操作使用 uv
+-  每个任务后更新三文档 (ARCHITECTURE.md, TODO.md, README.md)
+-  前端服务始终提供 mock 实现
+-  使用返回稳定引用的 Zustand 选择器
+-  优雅处理缺少 API 密钥的情况
+-  Python 使用类型提示，前端使用严格 TypeScript
+-  API 遵循 RESTful 规范
+-  使用 JWT 进行认证
+-  使用 Pydantic 验证所有输入
+-  保持组件小巧专注
+-  测试跨天拖拽排序
+-  确保 store 变化时地图更新
+
+### 不应该做：
+-  使用 pip、venv 或 virtualenv（仅使用 UV）
+-  跳过三文档更新协议
+-  在 Zustand 选择器中创建新数组/对象
+-  硬编码 API 密钥或密钥
+-  使用 eact-amap 或其他高德地图包装器
+-  将通勤信息存储为单独节点
+-  跳过 mock 实现
+-  在 TypeScript 中使用 any（AMap 运行时除外）
+-  破坏 mock 优先策略
+-  直接修改状态（始终使用 Zustand actions）
+-  将 .env 文件提交到 git
+-  使用原始 SQL 查询（使用 SQLAlchemy ORM）
+
+---
+
+##  环境变量
+
+**统一配置**: 所有环境变量统一在 backend/.env 中管理。
+
+前端通过 Vite 的 envDir: "./backend" 配置自动读取。
+
 ```
-VITE_AMAP_KEY=<your-amap-key>
-VITE_GOOGLE_API_KEY=<your-gemini-key>
-VITE_API_BASE_URL=http://localhost:8000
-VITE_USE_MOCK=false
-```
-
-### Backend (`backend/.env`)
-```
-JWT_SECRET_KEY=<strong-secret-key>
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-DATABASE_URL=sqlite:///./litetravel.db
+backend/.env
+ JWT_SECRET_KEY          # 后端专用
+ DATABASE_URL            # 后端专用
+ AMAP_KEY_WEB            # 后端 POI 搜索
+ AMAP_KEY_WEB_JS         # 后端配置 API
+ VITE_AMAP_KEY_WEB_JS    # 前端地图加载 (Vite 暴露)
+ GOOGLE_API_KEY          # 后端专用
+ VOLCENGINE_*            # LLM 配置
 ```
 
 ---
 
-## 🧪 Testing Considerations
+##  测试注意事项
 
-- Application should work entirely in mock mode (frontend)
-- Test drag & drop within and across days
-- Test map marker updates when nodes change
-- Test city change triggers map recenter
-- Test localStorage save/load functionality
-- Test authentication flow (register, login, logout)
-- Test protected API routes return 401 without token
-- Test CRUD operations for itinerary plans
-
----
-
-## 📝 Common Tasks
-
-### Adding a New Day
-- Use `addDay()` action from store
-- Automatically increments `day_index`
-- Optionally sets date based on previous day
-
-### Adding a Node from Search
-- Call `mapService.search(keyword)`
-- Create `PlanNode` from `MapSearchResult`
-- Use `addNode(dayIndex, node)`
-
-### Moving Nodes
-- Same day: `reorderNodes(dayIndex, oldIndex, newIndex)`
-- Cross day: `moveNodeAcrossDays(fromDayIndex, toDayIndex, nodeId, toIndex?)`
-
-### Saving/Loading Plans
-- **Local**: `localStorage.setItem('litetravel:plan:{city}', JSON.stringify({meta, days}))`
-- **Cloud**: `planService.savePlan(id, title, meta, days)` (requires auth)
-- **Load**: Parse JSON and call `setTrip({meta, days})`
-
-### User Authentication
-- **Register**: `authService.register({email, password})`
-- **Login**: `authService.login({email, password})`
-- **Logout**: `authService.logout()`
-- **Check Auth**: `authService.isAuthenticated()`
+- 应用应完全在 mock 模式下工作（前端）
+- 测试同天和跨天拖拽排序
+- 测试节点变化时地图标记更新
+- 测试城市切换触发地图重新居中
+- 测试 localStorage 保存/加载功能
+- 测试认证流程（注册、登录、登出）
+- 测试无令牌时受保护 API 路由返回 401
+- 测试行程计划的 CRUD 操作
 
 ---
 
-## 📖 Documentation References
+##  常见任务
 
-- [FastAPI Docs](https://fastapi.tiangolo.com/)
-- [uv Documentation](https://docs.astral.sh/uv/)
-- [SQLAlchemy Docs](https://docs.sqlalchemy.org/)
-- [Zustand Docs](https://docs.pmnd.rs/zustand)
-- [AMap JS API](https://lbs.amap.com/api/javascript-api/summary)
-- [@dnd-kit Docs](https://docs.dndkit.com/)
+### 添加新的一天
+- 使用 store 的 addDay() action
+- 自动递增 day_index
+- 可选：根据前一天设置日期
+
+### 从搜索添加节点
+- 调用 mapService.search(keyword)
+- 从 MapSearchResult 创建 PlanNode
+- 使用 addNode(dayIndex, node)
+
+### 移动节点
+- 同天：
+eorderNodes(dayIndex, oldIndex, newIndex)
+- 跨天：moveNodeAcrossDays(fromDayIndex, toDayIndex, nodeId, toIndex?)
+
+### 保存/加载计划
+- **本地**: localStorage.setItem('litetravel:plan:{city}', JSON.stringify({meta, days}))
+- **云端**: planService.savePlan(id, title, meta, days)（需要认证）
+- **加载**: 解析 JSON 并调用 setTrip({meta, days})
+
+### 用户认证
+- **注册**: authService.register({email, password})
+- **登录**: authService.login({email, password})
+- **登出**: authService.logout()
+- **检查认证**: authService.isAuthenticated()
 
 ---
 
-## 🚀 Notes
+##  文档参考
 
-- The app is designed to work offline-first (with mocks)
-- Real API integration is optional with graceful degradation
-- Focus on user experience: smooth drag & drop, clear visual feedback
-- Map and list must stay in sync at all times
-- Backend uses JWT for stateless authentication
-- All passwords are hashed with bcrypt
-- Use uv for consistent Python environment management
+- [FastAPI 文档](https://fastapi.tiangolo.com/)
+- [uv 文档](https://docs.astral.sh/uv/)
+- [SQLAlchemy 文档](https://docs.sqlalchemy.org/)
+- [Zustand 文档](https://docs.pmnd.rs/zustand)
+- [高德地图 JS API](https://lbs.amap.com/api/javascript-api/summary)
+- [@dnd-kit 文档](https://docs.dndkit.com/)
+
+---
+
+##  备注
+
+- 应用设计为离线优先（使用 mock）
+- 真实 API 集成是可选的，支持优雅降级
+- 专注用户体验：流畅拖拽、清晰视觉反馈
+- 地图和列表必须始终保持同步
+- 后端使用 JWT 进行无状态认证
+- 所有密码使用 bcrypt 哈希
+- 使用 uv 保持一致的 Python 环境管理
