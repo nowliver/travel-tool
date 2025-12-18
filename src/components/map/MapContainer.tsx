@@ -54,7 +54,7 @@ export function MapContainer() {
   const [isDetailBarOpen, setIsDetailBarOpen] = useState(false);
 
   useEffect(() => {
-    const key = import.meta.env.VITE_AMAP_KEY;
+    const key = import.meta.env.VITE_AMAP_KEY_WEB_JS;
     if (!key) {
       setError("未配置高德地图 Key，目前使用 Demo 占位地图。");
       return;

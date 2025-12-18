@@ -8,10 +8,10 @@ import { formatPOI } from "./utils/formatPOI";
 import type { AmapRegeoResponse } from "../types/amap";
 
 const useMock =
-  !import.meta.env.VITE_AMAP_KEY ||
+  !import.meta.env.VITE_AMAP_KEY_WEB_JS ||
   import.meta.env.VITE_USE_MOCK === "true";
 
-const AMAP_WEB_KEY = import.meta.env.VITE_AMAP_KEY as string | undefined;
+const AMAP_WEB_KEY = import.meta.env.VITE_AMAP_KEY_WEB_JS as string | undefined;
 
 export interface SearchBounds {
   center: GeoLocation;

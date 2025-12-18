@@ -22,8 +22,8 @@ class AmapSource(BaseSource):
     
     def __init__(self):
         self.settings = get_settings()
-        # 使用与前端相同的 AMAP_KEY，或单独配置后端 key
-        self.api_key = getattr(self.settings, "AMAP_KEY", None)
+        # 使用 AMAP_KEY_WEB 作为后端 Web Service API Key
+        self.api_key = self.settings.AMAP_KEY_WEB
     
     async def search(
         self,
@@ -47,7 +47,7 @@ class AmapSource(BaseSource):
             return SourceResult(
                 source=self.source_type,
                 success=False,
-                error="AMAP_KEY not configured"
+                error="AMAP_KEY_WEB not configured"
             )
         
         params = {

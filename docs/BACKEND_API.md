@@ -56,13 +56,16 @@ uv sync
 
 ### 2. 配置环境变量
 
-复制 `.env.example` 到 `.env` 并修改配置：
+**统一配置**: 前后端共用 `backend/.env` 文件（前端通过 Vite `envDir` 配置读取）。
 
 ```bash
 cp .env.example .env
 ```
 
-**重要**: 生产环境必须修改 `JWT_SECRET_KEY`！
+**重要**: 
+- 生产环境必须修改 `JWT_SECRET_KEY`
+- `VITE_` 前缀的变量会被前端读取
+- 参考 `.env.example` 了解所有配置项
 
 ### 3. 启动服务
 
@@ -140,7 +143,7 @@ uv lock --upgrade
 **环境变量配置**:
 ```env
 VOLCENGINE_API_KEY=your-api-key
-VOLCENGINE_MODEL=doubao-seed-1.6-flash
+VOLCENGINE_MODEL=doubao-seed-1-6-251015
 ```
 
 **分析文本请求示例**:

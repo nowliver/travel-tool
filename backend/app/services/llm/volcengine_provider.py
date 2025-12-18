@@ -28,13 +28,13 @@ class VolcengineProvider(LLMProvider):
     
     环境变量:
         VOLCENGINE_API_KEY: API 密钥
-        VOLCENGINE_MODEL: 模型名称 (默认: doubao-seed-1.6-flash)
+        VOLCENGINE_MODEL: 模型名称 (默认: doubao-seed-1-6-251015)
         VOLCENGINE_BASE_URL: API 地址
     """
     
     # 火山引擎 Endpoint ID 映射
     MODEL_ENDPOINTS = {
-        "doubao-seed-1.6-flash": "ep-20241215000000-xxxxx",  # 需要替换为实际 endpoint
+        "doubao-seed-1-6-251015": "ep-20241215000000-xxxxx",  # 需要替换为实际 endpoint
         "doubao-lite-32k": "ep-20241215000000-xxxxx",
     }
     
@@ -63,7 +63,7 @@ class VolcengineProvider(LLMProvider):
         except Exception as e:
             logger.warning(f"Failed to load from settings, falling back to env: {e}")
             api_key = os.environ.get("VOLCENGINE_API_KEY", "")
-            model = os.environ.get("VOLCENGINE_MODEL", "doubao-seed-1.6-flash")
+            model = os.environ.get("VOLCENGINE_MODEL", "doubao-seed-1-6-251015")
             base_url = os.environ.get("VOLCENGINE_BASE_URL", "https://ark.cn-beijing.volces.com/api/v3")
             temperature = float(os.environ.get("VOLCENGINE_TEMPERATURE", "0.3"))
             max_tokens = int(os.environ.get("VOLCENGINE_MAX_TOKENS", "4096"))

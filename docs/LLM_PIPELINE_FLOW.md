@@ -71,7 +71,7 @@
 │                                              │
 │  Step 3: LLMProvider (Volcengine)           │
 │    - 调用豆包大模型 API                       │
-│    - model: doubao-seed-1.6-flash                   │
+│    - model: doubao-seed-1-6-251015                   │
 │    - temperature: 0.3                        │
 │    - max_tokens: 4096                        │
 │                                              │
@@ -290,7 +290,7 @@ class DefaultPromptManager:
 class VolcengineProvider:
     async def chat_completion(self, system_prompt, user_content):
         response = await self._client.chat.completions.create(
-            model="doubao-seed-1.6-flash",
+            model="doubao-seed-1-6-251015",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
@@ -438,7 +438,7 @@ const response = await analyzeService.analyzeSearch({
 ```bash
 # Volcengine (豆包) API Key
 VOLCENGINE_API_KEY=your-api-key-here
-VOLCENGINE_MODEL=doubao-seed-1.6-flash
+VOLCENGINE_MODEL=doubao-seed-1-6-251015
 VOLCENGINE_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
 VOLCENGINE_TEMPERATURE=0.3
 VOLCENGINE_MAX_TOKENS=4096

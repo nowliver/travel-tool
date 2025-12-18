@@ -53,7 +53,7 @@ uv sync
 
 # 配置环境变量
 cp .env.example .env
-# 编辑 .env 设置 JWT_SECRET_KEY, AMAP_KEY 等
+# 编辑 .env 设置 JWT_SECRET_KEY, AMAP_KEY_WEB 等
 
 # 启动服务
 uv run uvicorn main:app --reload --port 8000
@@ -102,19 +102,38 @@ travel-tool/
 
 ## 🔑 环境变量
 
-### 前端 (.env.local)
-```
-VITE_AMAP_KEY=your_amap_key
-VITE_API_BASE_URL=http://localhost:8000
+**统一配置**: 所有环境变量统一在 `backend/.env` 中管理，前端通过 Vite 的 `envDir` 配置自动读取。
+
+```bash
+# 复制模板文件
+cp backend/.env.example backend/.env
+
+# 编辑配置
+nano backend/.env  # 或使用任意编辑器
 ```
 
-### 后端 (backend/.env)
-```
-JWT_SECRET_KEY=your_secret_key
+### 配置文件 (`backend/.env`)
+```bash
+# JWT 认证
+JWT_SECRET_KEY=your_secret_key        # 必须修改！
+
+# 数据库
 DATABASE_URL=sqlite:///./litetravel.db
-AMAP_KEY=your_amap_key
+
+# 高德地图 API Keys
+AMAP_KEY_WEB=your_amap_web_service_key    # 后端 POI 搜索
+AMAP_KEY_WEB_JS=your_amap_js_api_key      # 后端配置 API
+VITE_AMAP_KEY_WEB_JS=your_amap_js_api_key # 前端地图加载 (同上)
+
+# Google API
+GOOGLE_API_KEY=your_google_key
+
+# 火山引擎 LLM (Doubao)
 VOLCENGINE_API_KEY=your_volcengine_key
+VOLCENGINE_MODEL=doubao-seed-1-6-251015
 ```
+
+> **注意**: `VITE_` 前缀的变量会被 Vite 暴露给前端，仅放置公开配置。
 
 ## 📝 License
 

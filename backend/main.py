@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.db.base import init_db
-from app.api import auth, plans, content, analyze
+from app.api import auth, plans, content, analyze, config
 
 settings = get_settings()
 
@@ -36,6 +36,7 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(plans.router, prefix="/api")
 app.include_router(content.router, prefix="/api")
 app.include_router(analyze.router, prefix="/api")
+app.include_router(config.router, prefix="/api")
 
 
 @app.on_event("startup")

@@ -6,6 +6,8 @@ export default defineConfig(async () => {
 
   return {
     plugins: [react()],
+    // 统一使用 backend/.env 管理所有环境变量
+    envDir: "./backend",
     resolve: {
       alias: {
         "@": "/src",
@@ -17,7 +19,7 @@ export default defineConfig(async () => {
         "/amap": {
           target: "https://restapi.amap.com",
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/amap/, ""),
+          rewrite: (path: string) => path.replace(/^\/amap/, ""),
         },
       },
     },

@@ -40,7 +40,7 @@ backend/
 │   │   ├── content.py    # GET /content/search (v2.1+)
 │   │   └── deps.py       # get_current_user dependency
 │   ├── core/             # Core Configuration
-│   │   ├── config.py     # Environment settings (JWT_SECRET_KEY, DATABASE_URL, AMAP_KEY)
+│   │   ├── config.py     # Environment settings (JWT_SECRET_KEY, DATABASE_URL, AMAP_KEY_WEB)
 │   │   └── security.py   # JWT encode/decode, password hashing
 │   ├── db/               # Database Layer
 │   │   └── base.py       # SQLAlchemy engine, session, Base class
@@ -227,11 +227,56 @@ Subsequent requests include: Authorization: Bearer <token>
 | DELETE | `/api/plans/{id}` | Yes | Delete itinerary |
 
 ### Environment Variables
+
+**统一配置方案**: 所有环境变量统一在 `backend/.env` 中管理。
+
+前端通过 Vite 的 `envDir: "./backend"` 配置自动读取，无需单独的前端 `.env` 文件。
+
 ```
+backend/.env
+├── JWT_SECRET_KEY          # 后端专用
+├── DATABASE_URL            # 后端专用
+├── AMAP_KEY_WEB            # 后端 POI 搜索
+├── AMAP_KEY_WEB_JS         # 后端 /api/config 提供
+├── VITE_AMAP_KEY_WEB_JS    # 前端地图加载 (Vite 暴露)
+├── GOOGLE_API_KEY          # 后端专用
+└── VOLCENGINE_*            # LLM 配置
+```
+
+**配置文件示例** (`backend/.env`):
+```
+# JWT 认证
 JWT_SECRET_KEY=<secret-key>      # MUST change in production
 JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=1440  # 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+# 数据库
 DATABASE_URL=sqlite:///./litetravel.db
+
+# 高德地图 (AMap)
+AMAP_KEY_WEB=<web-service-key>       # 后端 POI 搜索
+AMAP_KEY_WEB_JS=<js-api-key>         # 后端配置 API
+VITE_AMAP_KEY_WEB_JS=<js-api-key>    # 前端地图加载 (同上)
+
+# Google API
+GOOGLE_API_KEY=<google-key>
+
+# 火山引擎 LLM
+VOLCENGINE_API_KEY=<api-key>
+VOLCENGINE_MODEL=doubao-seed-1-6-251015
+```
+
+### Configuration API
+
+后端提供 `/api/config` 端点，返回前端所需的公开配置：
+
+```typescript
+// GET /api/config
+{
+  amap_key_web_js: string | null,
+  app_name: string,
+  app_version: string
+}
 ```
 
 ---
@@ -535,7 +580,7 @@ AddressResult = {
 - **Parameters**: 
   - `extensions=all` - 返回 POI 和 AOI 详细信息
   - `radius=1000` - 搜索半径 1000 米
-- **Mock Fallback**: If `!import.meta.env.VITE_AMAP_KEY` → Use `mockMapService`
+- **Mock Fallback**: If `!import.meta.env.VITE_AMAP_KEY_WEB_JS` → Use `mockMapService`
 - **Proxy**: Real API calls use Vite proxy (`/amap/*`) to avoid CORS
 
 ### POI Data Formatting (`src/services/utils/formatPOI.ts`)

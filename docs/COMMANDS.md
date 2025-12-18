@@ -291,32 +291,47 @@ uv run ruff format .
 
 ## 🔑 环境变量配置
 
-### 前端 (`.env.local`)
+**统一配置**: 所有环境变量统一在 `backend/.env` 中管理。
 
-```env
-VITE_AMAP_KEY=<your-amap-key>
-VITE_GOOGLE_API_KEY=<your-gemini-key>
-VITE_API_BASE_URL=http://localhost:8000
-VITE_USE_MOCK=false
+```bash
+# 复制模板
+cp backend/.env.example backend/.env
+
+# 编辑配置
+notepad backend/.env  # Windows
+nano backend/.env     # Linux/Mac
 ```
 
-### 后端 (`backend/.env`)
+### 配置文件 (`backend/.env`)
 
 ```env
+# JWT 认证
 JWT_SECRET_KEY=<strong-secret-key>
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+# 数据库
 DATABASE_URL=sqlite:///./litetravel.db
+
+# 高德地图 API
+AMAP_KEY_WEB=<web-service-key>         # 后端 POI 搜索
+AMAP_KEY_WEB_JS=<js-api-key>           # 后端配置 API
+VITE_AMAP_KEY_WEB_JS=<js-api-key>      # 前端地图加载
+
+# 火山引擎 LLM
+VOLCENGINE_API_KEY=<volcengine-key>
 ```
+
+> **注意**: 前端通过 Vite 的 `envDir` 配置自动读取 `backend/.env`，无需单独配置。
 
 ---
 
-## 🔍 数据采集与内容服务
+## 数据采集与内容服务
 
 ### 内容 API 测试
 
 ```bash
-# 搜索景点 (需要配置 AMAP_KEY)
+# 搜索景点 (需要配置 AMAP_KEY_WEB)
 curl "http://localhost:8000/api/content/search?keyword=岳麓山&city=长沙&category=attraction"
 
 # 搜索美食

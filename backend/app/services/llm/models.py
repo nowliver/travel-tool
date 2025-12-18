@@ -169,7 +169,7 @@ class PromptTemplate(BaseModel):
 class LLMConfig(BaseModel):
     """LLM 配置"""
     provider: str = Field(default="volcengine", description="提供商")
-    model: str = Field(default="doubao-seed-1.6-flash", description="模型名称")
+    model: str = Field(default="doubao-seed-1-6-251015", description="模型名称")
     api_key: str = Field(default="", description="API Key (从环境变量读取)")
     base_url: str = Field(default="https://ark.cn-beijing.volces.com/api/v3", description="API Base URL")
     temperature: float = Field(default=0.3, ge=0.0, le=2.0, description="生成温度")

@@ -1,6 +1,4 @@
 node_modules
-.env.local
-.env.memory
 
 # Backend
 backend/.env
