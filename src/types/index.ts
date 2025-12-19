@@ -96,6 +96,7 @@ export interface TripStoreActions {
   // 收藏操作
   addFavorite: (item: Omit<FavoriteItem, "id" | "addedAt">) => void;
   removeFavorite: (id: string) => void;
+  setFavorites: (favorites: FavoriteItem[]) => void;
 }
 
 export type TripStore = TripStoreState & TripStoreActions;

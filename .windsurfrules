@@ -123,29 +123,6 @@ LiteTravel 是一个**全栈**旅行规划应用，结合地图可视化与行�
 
 **永远不要使用 pip、venv 或 virtualenv。所有 Python 操作必须使用 uv。**
 
-### 常用命令
-
-```bash
-# 添加生产依赖
-uv add <package>
-
-# 添加开发依赖
-uv add --dev <package>
-
-# 安装所有依赖
-uv sync
-
-# 运行 Python 脚本/命令
-uv run python main.py
-uv run uvicorn main:app --reload
-
-# 运行测试
-uv run pytest
-
-# 更新依赖
-uv lock --upgrade
-```
-
 ### 后端开发规则
 
 1. **添加依赖**: 始终使用 uv add <package>
@@ -200,11 +177,44 @@ backend/
 
 ##  核心架构原则
 
-### 1. Mock 优先策略（前端）
-- **关键**: 所有前端服务必须在 src/services/mock/ 中有 mock 实现
-- 服务导出必须检查环境变量并回退到 mock
-- Mock 数据应使用真实坐标（真实的长沙坐标，而非 0,0）
-- 应用必须在未配置任何 API 密钥时正常工作
+### 1. 多源数据集成与 Mock 兜底策略
+
+#### 前端服务层规则
+- **强制要求**：所有前端服务必须在 `src/services/mock/` 中有完整的 mock 实现
+- **环境检测**：每个真实服务必须检查对应的环境变量（如 `VITE_AMAP_KEY_WEB_JS`）
+- **降级逻辑**：API 调用失败时自动降级到 mock 实现，不中断用户体验
+- **日志记录**：降级时使用 `console.warn()` 记录原因，便于调试
+
+**标准模式**：
+```typescript
+// src/services/mapService.ts
+const useMock = 
+  !import.meta.env.VITE_AMAP_KEY_WEB_JS || 
+  import.meta.env.VITE_USE_MOCK === "true";
+
+const realMapService: MapServiceApi = {
+  async search(keyword, city, bounds) {
+    // 1. 环境检测
+    if (!AMAP_WEB_KEY) {
+      console.warn('AMap key not configured, using mock data');
+      return mockMapService.search(keyword, city, bounds);
+    }
+
+    try {
+      // 2. 真实 API 调用
+      const response = await fetch(url);
+      // ... 处理响应
+      return results;
+    } catch (error) {
+      // 3. 错误降级
+      console.error('AMap API failed:', error);
+      return mockMapService.search(keyword, city, bounds);
+    }
+  }
+};
+
+// 4. 导出统一接口
+export const mapService: MapServiceApi = useMock ? mockMapService : realMapService;
 
 ### 2. Zustand 状态管理
 - 使用 Zustand 管理全局状态（useTripStore, useAuthStore）
@@ -362,7 +372,7 @@ uv sync                    # 更新锁定文件
 ### 应该做：
 -  所有 Python 操作使用 uv
 -  每个任务后更新三文档 (ARCHITECTURE.md, TODO.md, README.md)
--  前端服务始终提供 mock 实现
+-  前端服务始终提供 mock 实现，以保证用户未提供api等资源时 app 界面的可展示性
 -  使用返回稳定引用的 Zustand 选择器
 -  优雅处理缺少 API 密钥的情况
 -  Python 使用类型提示，前端使用严格 TypeScript
@@ -380,9 +390,7 @@ uv sync                    # 更新锁定文件
 -  硬编码 API 密钥或密钥
 -  使用 eact-amap 或其他高德地图包装器
 -  将通勤信息存储为单独节点
--  跳过 mock 实现
 -  在 TypeScript 中使用 any（AMap 运行时除外）
--  破坏 mock 优先策略
 -  直接修改状态（始终使用 Zustand actions）
 -  将 .env 文件提交到 git
 -  使用原始 SQL 查询（使用 SQLAlchemy ORM）
@@ -410,7 +418,6 @@ backend/.env
 
 ##  测试注意事项
 
-- 应用应完全在 mock 模式下工作（前端）
 - 测试同天和跨天拖拽排序
 - 测试节点变化时地图标记更新
 - 测试城市切换触发地图重新居中
@@ -464,8 +471,7 @@ eorderNodes(dayIndex, oldIndex, newIndex)
 
 ##  备注
 
-- 应用设计为离线优先（使用 mock）
-- 真实 API 集成是可选的，支持优雅降级
+- 应用设计为真实 API 集成优先，未提供真实 API 时，优雅降级使用 mock 数据
 - 专注用户体验：流畅拖拽、清晰视觉反馈
 - 地图和列表必须始终保持同步
 - 后端使用 JWT 进行无状态认证

@@ -168,7 +168,7 @@ export const useTripStore = create<TripStore>((set, get) => ({
       highlightedLocation: location,
     })),
 
-  // 收藏操作
+  // 收藏操作（本地临时存储，实际应通过 API）
   addFavorite: (item) =>
     set((state) => {
       // 生成唯一 ID
@@ -184,6 +184,12 @@ export const useTripStore = create<TripStore>((set, get) => ({
   removeFavorite: (id) =>
     set((state) => ({
       favorites: state.favorites.filter((f) => f.id !== id),
+    })),
+  
+  // 设置收藏列表（从后端加载）
+  setFavorites: (favorites: FavoriteItem[]) =>
+    set(() => ({
+      favorites,
     })),
 }));
 

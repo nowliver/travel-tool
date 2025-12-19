@@ -1,7 +1,7 @@
 # LiteTravel - Architecture Documentation
 
-> **Last Updated**: 2025-12-16  
-> **Version**: 2.3.0  
+> **Last Updated**: 2025-12-19  
+> **Version**: 2.5.0  
 > **Status**: Active Development
 
 ---
@@ -37,6 +37,7 @@ backend/
 │   ├── api/              # API Endpoints
 │   │   ├── auth.py       # POST /register, /login, /logout, GET /me
 │   │   ├── plans.py      # CRUD for /plans
+│   │   ├── favorites.py  # CRUD for /favorites (v2.4+)
 │   │   ├── content.py    # GET /content/search (v2.1+)
 │   │   └── deps.py       # get_current_user dependency
 │   ├── core/             # Core Configuration
@@ -46,10 +47,12 @@ backend/
 │   │   └── base.py       # SQLAlchemy engine, session, Base class
 │   ├── models/           # SQLAlchemy Models
 │   │   ├── user.py       # User entity
-│   │   └── itinerary.py  # ItineraryPlan entity
+│   │   ├── itinerary.py  # ItineraryPlan entity
+│   │   └── favorite.py   # Favorite entity (v2.4+)
 │   ├── schemas/          # Pydantic Schemas
 │   │   ├── user.py       # UserCreate, UserLogin, Token, UserResponse
 │   │   ├── itinerary.py  # ItineraryCreate, ItineraryUpdate, ItineraryResponse
+│   │   ├── favorite.py   # FavoriteCreate, FavoriteResponse, FavoriteListResponse (v2.4+)
 │   │   └── content.py    # ContentCategory, AttractionItem, HotelItem, etc. (v2.1+)
 │   └── services/         # Business Logic Services (v2.1+)
 │       ├── sources/      # Data source integrations
@@ -93,6 +96,97 @@ DataSource 层 (sources/)
 | 住宿 (hotel) | 携程 + 美团 | `HotelItem` |
 | 美食 (dining) | 高德 + 小红书 | `DiningItem` |
 | 出行 (commute) | 携程 + 高德 | `CommuteItem` |
+
+### Toast Notification System (v2.5+)
+
+**技术方案**：使用 `react-hot-toast` 替代浏览器默认 `alert()`，提供统一的暗色主题通知样式。
+
+**配置** (`src/App.tsx`):
+```typescript
+<Toaster
+  position="top-center"
+  toastOptions={{
+    duration: 3000,
+    style: {
+      background: "rgba(24, 24, 27, 0.95)",
+      color: "#e4e4e7",
+      border: "1px solid rgba(255, 255, 255, 0.04)",
+      borderRadius: "12px",
+      backdropFilter: "blur(12px)",
+    },
+    success: { iconTheme: { primary: "#22c55e" } },
+    error: { iconTheme: { primary: "#ef4444" } },
+  }}
+/>
+```
+
+**使用场景**：
+- 登录验证失败 → `toast.error("请先登录")`
+- 添加收藏成功 → `toast.success("已添加到收藏")`
+- API 调用失败 → `toast.error("添加收藏失败")`
+
+**替换位置**：
+- `MapContainer.tsx`: 右键菜单和 POI 详情栏的收藏操作
+- `NodeCard.tsx`: 行程节点的收藏操作
+
+### AI Analysis in All Views (v2.5+)
+
+**统一 AI 分析功能**：四个 View 页面均配置 AI 智能分析，使用相同的 UI 模式和数据流。
+
+**View 配置**：
+```typescript
+// AttractionsView - 景点探索（绿色主题 #22c55e）
+template: undefined, icon: MapPin
+
+// DiningView - 美食探店（橙色主题 #f97316）
+template: "dining_analysis", icon: UtensilsCrossed
+
+// AccommodationView - 住宿推荐（蓝色主题 #3b82f6）
+template: "hotel_analysis", icon: Building2
+
+// CommuteView - 出行交通（紫色主题 #a855f7）
+template: undefined, icon: Train
+```
+
+**搜索流程**：
+```
+用户输入关键词 → handleSearch()
+    ↓
+analyzeService.analyzeSearch({ keyword, city, source: "mock", limit: 5, template })
+    ↓
+后端 /api/analyze/search (LLM Pipeline)
+    ↓
+返回 AnalysisResult[] → 使用 AnalysisCard 组件展示
+    ↓
+支持：查看详情、定位到地图、添加到行程
+```
+
+**共享组件**：
+- `AnalysisCard`: 统一的结果卡片，根据 `type` 参数调整样式
+- 错误处理：使用统一的错误提示样式
+- 空结果提示：各 View 使用对应主题色和图标
+
+### Favorites Architecture (v2.4+)
+
+**统一收藏管理**：
+- 所有收藏功能集中在 FloatingNavLayer 的收藏标签页（FavoritesView）
+- AttractionsView 只保留 AI 探索功能，不再有收藏 Tab
+- 收藏项显示类型徽章（景点/美食/住宿）
+
+**类型判断规则**：
+- 右键行程节点 → 使用节点的 `type` 字段（spot/hotel/dining）
+- 右键地图位置 → 默认为 `"spot"` (景点)
+
+**收藏数据流**：
+```
+用户操作 → favoriteService.addFavorite() → 后端 API (/api/favorites)
+    ↓
+后端保存（user_id + type + name + location）
+    ↓
+FavoritesView 加载 → 按类型分组显示 + 类型徽章
+    ↓
+支持拖拽到行程 + 地图定位
+```
 
 ### Scrapers Module (v2.1+)
 
@@ -193,6 +287,18 @@ class ItineraryPlan:
     updated_at: datetime
 ```
 
+#### Favorite (v2.4+)
+```python
+class Favorite:
+    id: str (UUID)
+    user_id: str (ForeignKey -> User)
+    type: str (spot | hotel | dining)
+    name: str
+    address: str (optional)
+    location: JSON  # {lat: float, lng: float}
+    created_at: datetime
+```
+
 ### Authentication Flow
 ```
 User Register/Login
@@ -225,6 +331,10 @@ Subsequent requests include: Authorization: Bearer <token>
 | GET | `/api/plans/{id}` | Yes | Get itinerary details |
 | PUT | `/api/plans/{id}` | Yes | Update itinerary |
 | DELETE | `/api/plans/{id}` | Yes | Delete itinerary |
+| GET | `/api/favorites` | Yes | List user's favorites (filter by type) |
+| GET | `/api/favorites/grouped` | Yes | Get favorites grouped by type |
+| POST | `/api/favorites` | Yes | Add new favorite |
+| DELETE | `/api/favorites/{id}` | Yes | Delete favorite |
 
 ### Environment Variables
 
@@ -394,7 +504,9 @@ User Right-Clicks Map (Blank Area)
   ↓
 [ContextMenu] Shows: "Add to Favorites" | "Add to Plan (Day 1/2/3...)"
   ↓
-User Selects Action → Store.addFavorite() or Store.addNode()
+User Selects Action → favoriteService.addFavorite() (backend API) or Store.addNode()
+  ↓
+[Right-click on map → type defaults to "spot"]
 ```
 
 **Coordinate Fix**:

@@ -1,8 +1,13 @@
 import { useState } from "react";
-import { Star, Navigation, Trash2, Clock, Wallet, FileText, MoreHorizontal } from "lucide-react";
-import type { PlanNode, NodeType } from "../../types";
+import toast from "react-hot-toast";
+import { ChevronDown, Star, Navigation, Trash2, MapPin, BedDouble, Utensils, MoreHorizontal, Clock, Wallet, FileText } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useTripStore } from "../../store/tripStore";
+import { useAuthStore } from "../../store/authStore";
+import favoriteService from "../../services/api/favoriteService";
 import { ContextMenu, useContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
+import type { PlanNode, NodeType } from "../../types";
 
 interface NodeCardProps {
   node: PlanNode;
@@ -13,8 +18,8 @@ export function NodeCard({ node, dayIndex }: NodeCardProps) {
   const [expanded, setExpanded] = useState(false);
   const updateNode = useTripStore((s) => s.updateNode);
   const removeNode = useTripStore((s) => s.removeNode);
-  const addFavorite = useTripStore((s) => s.addFavorite);
   const setHighlightedLocation = useTripStore((s) => s.setHighlightedLocation);
+  const { user } = useAuthStore();
 
   // 右键菜单
   const { contextMenu, openContextMenu, closeContextMenu } = useContextMenu();
@@ -44,12 +49,38 @@ export function NodeCard({ node, dayIndex }: NodeCardProps) {
     openContextMenu(e);
   };
 
-  const handleAddToFavorites = () => {
-    addFavorite({
-      name: node.name,
-      location: node.location,
-      type: node.type,
-    });
+  // 点击 ... 按钮时，在按钮位置打开菜单
+  const handleMoreButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const button = e.currentTarget;
+    const rect = button.getBoundingClientRect();
+    // 在按钮下方打开菜单
+    const syntheticEvent = {
+      ...e,
+      clientX: rect.left,
+      clientY: rect.bottom + 4,
+      preventDefault: () => {},
+    } as React.MouseEvent;
+    openContextMenu(syntheticEvent);
+  };
+
+  const handleAddToFavorites = async () => {
+    if (!user) {
+      toast.error("请先登录");
+      return;
+    }
+    try {
+      await favoriteService.addFavorite({
+        name: node.name,
+        location: node.location,
+        type: node.type,
+      });
+      toast.success("已添加到收藏");
+    } catch (err) {
+      console.error("Failed to add favorite:", err);
+      toast.error("添加收藏失败");
+    }
   };
 
   const handleLocateOnMap = () => {
@@ -129,10 +160,7 @@ export function NodeCard({ node, dayIndex }: NodeCardProps) {
           
           <button 
             className="opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 rounded-md hover:bg-white/[0.08] text-zinc-500 hover:text-zinc-300"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleContextMenu(e);
-            }}
+            onClick={handleMoreButtonClick}
           >
             <MoreHorizontal className="w-3.5 h-3.5" />
           </button>

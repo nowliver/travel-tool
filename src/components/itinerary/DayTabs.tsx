@@ -1,4 +1,6 @@
 import { useDroppable } from "@dnd-kit/core";
+import { useRef, useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { DayPlan } from "../../types";
 
 interface DayTabsProps {
@@ -39,17 +41,87 @@ function DayTab({ day, active, onChange }: DayTabProps) {
 }
 
 export function DayTabs({ days, activeDayIndex, onChange }: DayTabsProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+
+  // 检查滚动状态，决定是否显示箭头
+  const checkScrollState = () => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    setShowLeftArrow(scrollLeft > 0);
+    setShowRightArrow(scrollLeft + clientWidth < scrollWidth - 1);
+  };
+
+  useEffect(() => {
+    checkScrollState();
+    const container = scrollRef.current;
+    if (container) {
+      container.addEventListener("scroll", checkScrollState);
+      window.addEventListener("resize", checkScrollState);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener("scroll", checkScrollState);
+      }
+      window.removeEventListener("resize", checkScrollState);
+    };
+  }, [days]);
+
+  const scroll = (direction: "left" | "right") => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const scrollAmount = 120;
+    container.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
   return (
-    <div className="w-full overflow-x-auto py-2.5 no-scrollbar">
-      <div className="flex flex-nowrap gap-1.5 px-6">
-        {days.map((day) => (
-          <DayTab
-            key={day.day_index}
-            day={day}
-            active={day.day_index === activeDayIndex}
-            onChange={onChange}
-          />
-        ))}
+    <div 
+      className="relative w-full group/tabs flex items-center"
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
+      {/* 左箭头 */}
+      {showLeftArrow && isHovering && (
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-1 z-20 w-5 h-5 flex items-center justify-center bg-zinc-900/90 border border-white/10 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all shadow-lg animate-fade-in"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+      )}
+
+      {/* 右箭头 */}
+      {showRightArrow && isHovering && (
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-1 z-20 w-5 h-5 flex items-center justify-center bg-zinc-900/90 border border-white/10 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all shadow-lg animate-fade-in"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      )}
+
+      {/* 标签容器 */}
+      <div 
+        ref={scrollRef}
+        className="w-full overflow-x-auto py-2.5 no-scrollbar"
+      >
+        <div className="flex flex-nowrap gap-1.5 px-6">
+          {days.map((day) => (
+            <DayTab
+              key={day.day_index}
+              day={day}
+              active={day.day_index === activeDayIndex}
+              onChange={onChange}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

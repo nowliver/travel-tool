@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { Star, Calendar } from "lucide-react";
 import { useTripStore } from "../../store/tripStore";
+import { useAuthStore } from "../../store/authStore";
 import { mapService } from "../../services/mapService";
+import favoriteService from "../../services/api/favoriteService";
 import { ContextMenu, useContextMenu, type ContextMenuItem } from "../ui/ContextMenu";
 import { LocationDetailBar } from "./LocationDetailBar";
 import { buildSelectedMarkerHtml } from "./CustomMarker";
@@ -32,9 +35,9 @@ export function MapContainer() {
   const setMeta = useTripStore((state) => state.setMeta);
   const highlightedLocation = useTripStore((state) => state.highlightedLocation);
   const isResizingSidebar = useTripStore((state) => state.isResizingSidebar);
-  const addFavorite = useTripStore((state) => state.addFavorite);
   const addNode = useTripStore((state) => state.addNode);
   const setHighlightedLocation = useTripStore((state) => state.setHighlightedLocation);
+  const { user } = useAuthStore();
 
   // 右键菜单状态
   const { contextMenu, openContextMenu, closeContextMenu } = useContextMenu();
@@ -338,13 +341,23 @@ export function MapContainer() {
   const buildContextMenuItems = (): ContextMenuItem[] => {
     if (!clickedLocation) return [];
 
-    const handleAddToFavorites = () => {
-      addFavorite({
-        name: clickedLocation.name,
-        location: clickedLocation.location,
-        type: "spot",
-        address: clickedLocation.address,
-      });
+    const handleAddToFavorites = async () => {
+      if (!user) {
+        toast.error("请先登录");
+        return;
+      }
+      try {
+        await favoriteService.addFavorite({
+          name: clickedLocation.name,
+          location: clickedLocation.location,
+          type: "spot",
+          address: clickedLocation.address,
+        });
+        toast.success("已添加到收藏");
+      } catch (err) {
+        console.error("Failed to add favorite:", err);
+        toast.error("添加收藏失败");
+      }
     };
 
     const handleAddToPlan = (dayIndex: number) => {
@@ -389,16 +402,26 @@ export function MapContainer() {
   };
 
   // POI 详情栏操作
-  const handleAddToFavorites = () => {
+  const handleAddToFavorites = async () => {
     if (!selectedPOI) return;
-    addFavorite({
-      name: selectedPOI.name,
-      location: selectedPOI.location,
-      type: selectedPOI.type || "spot",
-      address: selectedPOI.address,
-    });
-    setIsDetailBarOpen(false);
-    setSelectedPOI(null);
+    if (!user) {
+      toast.error("请先登录");
+      return;
+    }
+    try {
+      await favoriteService.addFavorite({
+        name: selectedPOI.name,
+        location: selectedPOI.location,
+        type: selectedPOI.type || "spot",
+        address: selectedPOI.address,
+      });
+      toast.success("已添加到收藏");
+      setIsDetailBarOpen(false);
+      setSelectedPOI(null);
+    } catch (err) {
+      console.error("Failed to add favorite:", err);
+      toast.error("添加收藏失败");
+    }
   };
 
   const handleAddToPlan = (dayIndex: number) => {

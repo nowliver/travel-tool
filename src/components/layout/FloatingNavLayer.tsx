@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { MapPin, BedDouble, Utensils, Bus, X } from "lucide-react";
+import { MapPin, BedDouble, Utensils, Bus, Star, X } from "lucide-react";
 import { AttractionsView } from "../views/AttractionsView";
 import { AccommodationView } from "../views/AccommodationView";
 import { DiningView } from "../views/DiningView";
 import { CommuteView } from "../views/CommuteView";
+import { FavoritesView } from "../views/FavoritesView";
 import { useTripStore } from "../../store/tripStore";
 import { RESIZE_HANDLE_WIDTH } from "./ResizeHandle";
 
-type TabType = "attractions" | "hotel" | "dining" | "commute";
+type TabType = "attractions" | "hotel" | "dining" | "commute" | "favorites";
 
 interface TabConfig {
   id: TabType;
@@ -21,6 +22,7 @@ const tabs: TabConfig[] = [
   { id: "hotel", label: "住宿", icon: BedDouble, component: AccommodationView },
   { id: "dining", label: "美食", icon: Utensils, component: DiningView },
   { id: "commute", label: "出行", icon: Bus, component: CommuteView },
+  { id: "favorites", label: "收藏", icon: Star, component: FavoritesView },
 ];
 
 export function FloatingNavLayer() {

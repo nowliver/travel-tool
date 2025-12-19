@@ -1,31 +1,17 @@
 import { useState } from "react";
-import { MapPin, Trash2, Navigation, Search, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Search, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { useTripStore } from "../../store/tripStore";
 import { analyzeService, type AnalysisResult } from "../../services/api/analyzeService";
 import { AnalysisCard } from "../ui/AnalysisCard";
 
 export function AttractionsView() {
-  const favorites = useTripStore((s) => s.favorites);
-  const removeFavorite = useTripStore((s) => s.removeFavorite);
-  const setHighlightedLocation = useTripStore((s) => s.setHighlightedLocation);
   const confirmedCity = useTripStore((s) => s.confirmedCity);
 
-  // 搜索状态
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<AnalysisResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
-
-  // 视图切换: 'favorites' | 'search'
-  const [activeTab, setActiveTab] = useState<'favorites' | 'search'>('search');
-
-  const handleLocate = (item: typeof favorites[0]) => {
-    setHighlightedLocation({
-      location: item.location,
-      name: item.name,
-    });
-  };
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -64,37 +50,7 @@ export function AttractionsView() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tab 切换 - Floating Segmented Control Style */}
-      <div className="px-5 pt-5 pb-2">
-        <div className="flex p-0.5 bg-zinc-900/60 rounded-lg border border-white/[0.04]">
-          <button
-            onClick={() => setActiveTab('search')}
-            className={`flex-1 py-1.5 text-[11px] font-medium rounded-md transition-all duration-300 ${
-              activeTab === 'search'
-                ? 'bg-zinc-800/80 text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            <Sparkles className="w-3 h-3 inline-block mr-1 -mt-0.5" />
-            AI 探索
-          </button>
-          <button
-            onClick={() => setActiveTab('favorites')}
-            className={`flex-1 py-1.5 text-[11px] font-medium rounded-md transition-all duration-300 ${
-              activeTab === 'favorites'
-                ? 'bg-zinc-800/80 text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            <MapPin className="w-3 h-3 inline-block mr-1 -mt-0.5" />
-            收藏 <span className="opacity-60 text-[9px] ml-0.5">{favorites.length}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* AI 探索 Tab */}
-      {activeTab === 'search' && (
-        <div className="flex-1 overflow-y-auto px-5 pb-5 custom-scroll">
+      <div className="flex-1 overflow-y-auto px-5 py-5 custom-scroll">
           {/* 搜索框 */}
           <div className="mb-6 mt-2 space-y-3">
             <div className="relative group">
@@ -184,68 +140,6 @@ export function AttractionsView() {
             </div>
           )}
         </div>
-      )}
-
-      {/* 收藏 Tab */}
-      {activeTab === 'favorites' && (
-        <div className="flex-1 overflow-y-auto px-5 pb-5 custom-scroll">
-          {favorites.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-14 h-14 bg-zinc-900/60 rounded-xl flex items-center justify-center mx-auto mb-4 border border-white/[0.04]">
-                <MapPin className="w-6 h-6 text-zinc-700" />
-              </div>
-              <p className="text-[13px] font-medium text-zinc-400 mb-1.5">暂无收藏景点</p>
-              <p className="text-[11px] text-zinc-600 max-w-[180px] mx-auto leading-relaxed">
-                在地图上右键点击任意位置，或从搜索结果中添加
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-2.5 pt-1">
-              {favorites.map((item) => (
-                <div
-                  key={item.id}
-                  className="group relative bg-zinc-900/50 border border-white/[0.04] rounded-xl p-3 hover:bg-zinc-900/70 hover:border-white/[0.08] transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-[13px] font-medium text-zinc-200 truncate tracking-tight">
-                        {item.name}
-                      </h3>
-                      {item.address && (
-                        <p className="text-[11px] text-zinc-500 truncate mt-0.5">
-                          {item.address}
-                        </p>
-                      )}
-                      <p className="text-[9px] text-zinc-600 mt-1.5 font-mono">
-                        {new Date(item.addedAt).toLocaleDateString("zh-CN")}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1 group-hover:translate-x-0">
-                      <button
-                        type="button"
-                        onClick={() => handleLocate(item)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-                        title="在地图上定位"
-                      >
-                        <Navigation className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeFavorite(item.id)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title="删除收藏"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

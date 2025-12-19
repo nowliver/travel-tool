@@ -11,6 +11,7 @@ from .itinerary import (
     TripMeta,
     TripContent
 )
+from .favorite import FavoriteCreate, FavoriteResponse, FavoriteListResponse
 
 __all__ = [
     "UserCreate",
@@ -27,5 +28,8 @@ __all__ = [
     "PlanNode",
     "DayPlan",
     "TripMeta",
-    "TripContent"
+    "TripContent",
+    "FavoriteCreate",
+    "FavoriteResponse",
+    "FavoriteListResponse"
 ]

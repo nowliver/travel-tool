@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ChevronRight } from "lucide-react";
 
 export interface ContextMenuItem {
@@ -22,6 +23,12 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [openSubMenuId, setOpenSubMenuId] = useState<string | null>(null);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
+  const [mounted, setMounted] = useState(false);
+
+  // 确保在客户端渲染
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 点击外部关闭菜单
   useEffect(() => {
@@ -90,7 +97,10 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
     onClose();
   };
 
-  return (
+  // 使用 Portal 渲染到 body，避免父元素 transform 影响 fixed 定位
+  if (!mounted) return null;
+
+  const menuContent = (
     <div
       ref={menuRef}
       className="fixed z-[9999] min-w-[140px] bg-zinc-900/95 backdrop-blur-xl border border-white/[0.08] rounded-lg shadow-2xl py-1 text-[11px] font-medium animate-fade-in"
@@ -130,6 +140,8 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
       ))}
     </div>
   );
+
+  return createPortal(menuContent, document.body);
 }
 
 interface SubMenuProps {

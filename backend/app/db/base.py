@@ -32,5 +32,5 @@ def get_db():
 
 def init_db():
     """Initialize database tables."""
-    from app.models import user, itinerary  # noqa: F401
+    from app.models import user, itinerary, favorite  # noqa: F401
     Base.metadata.create_all(bind=engine)

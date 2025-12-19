@@ -254,6 +254,38 @@ export function ItineraryPanel({ onOpenAuth, onOpenPlans }: ItineraryPanelProps)
 
     if (!over) return;
 
+    // 处理从收藏夹拖拽到行程
+    if (active.data.current?.type === 'favorite') {
+      const favorite = active.data.current.favorite;
+      
+      // 确定目标 day
+      let targetDayIndex = activeDayIndex;
+      if (over.data.current?.type === 'day') {
+        targetDayIndex = over.data.current.dayIndex;
+      } else {
+        // 如果拖拽到节点上，找到该节点所在的 day
+        const targetDay = days.find(day => 
+          day.nodes.some(node => node.id === over.id)
+        );
+        if (targetDay) {
+          targetDayIndex = targetDay.day_index;
+        }
+      }
+
+      // 创建新节点
+      const newNode: PlanNode = {
+        id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        name: favorite.name,
+        location: favorite.location,
+        type: favorite.type,
+      };
+
+      addNode(targetDayIndex, newNode);
+      setActiveDayIndex(targetDayIndex);
+      return;
+    }
+
+    // 处理行程内拖拽排序
     if (active.id !== over.id) {
       const activeNodeDay = days.find(day => 
         day.nodes.some(node => node.id === active.id)
@@ -441,7 +473,7 @@ export function ItineraryPanel({ onOpenAuth, onOpenPlans }: ItineraryPanelProps)
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto custom-scroll relative bg-zinc-950">
+      <div className="flex-1 overflow-y-scroll no-scrollbar relative bg-zinc-950">
         {/* Timeline Line */}
         <div className="absolute inset-y-0 left-8 w-px border-l border-dashed border-zinc-800/40 z-0 ml-4" />
         
