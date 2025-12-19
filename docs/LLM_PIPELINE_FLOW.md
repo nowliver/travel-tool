@@ -25,7 +25,7 @@
 │     Backend API (FastAPI)                    │
 │  backend/app/api/analyze.py                  │
 │  - 接收搜索请求                               │
-│  - 调用 Pipeline.fetch_and_process()         │
+│  - 根据 source 执行 auto/指定数据源/降级逻辑   │
 └──────┬───────────────────────────────────────┘
        │ 3. 数据获取
        ↓
@@ -124,7 +124,7 @@
 
 ---
 
-## 🔧 核心组件详解
+## 核心组件详解
 
 ### 1. 前端交互层
 
@@ -135,7 +135,7 @@ const handleSearch = async () => {
   const response = await analyzeService.analyzeSearch({
     keyword: searchQuery,      // 用户输入
     city: confirmedCity,       // 当前城市
-    source: "mock",            // 数据源: mock 或 xiaohongshu
+    source: "auto",            // 数据源: auto(默认) / xiaohongshu / mock
     limit: 5,                  // 返回数量
   });
   
@@ -168,224 +168,18 @@ export const analyzeService = {
 };
 ```
 
-**Mock 回退机制**:
-```typescript
-// 如果后端不可用，自动使用 mock
-try {
-  return await realService.analyzeSearch(request);
-} catch {
-  return mockAnalyzeService.analyzeSearch(request);
-}
-```
-
----
-
-### 3. 后端 API 端点
-
-**文件**: `backend/app/api/analyze.py`
-
-```python
-@router.post("/search", response_model=BatchAnalyzeResponse)
-async def analyze_search(request: AnalyzeSearchRequest):
-    pipeline = get_pipeline()
-    
-    # 执行搜索和分析
-    result = await pipeline.fetch_and_process(
-        source_type=DataSourceType.MOCK,  # 或 XIAOHONGSHU
-        keyword=request.keyword,
-        city=request.city,
-        limit=request.limit,
-    )
-    
-    return BatchAnalyzeResponse(
-        success=result.success_count > 0,
-        data=result,
-    )
-```
-
----
-
-### 4. 数据源适配器
-
-#### Mock 数据源 (测试用)
-
-**文件**: `backend/app/services/llm/data_sources.py`
-
-```python
-class MockDataSource(DataSource):
-    MOCK_NOTES = [
-        {
-            "id": "mock_001",
-            "title": "长沙三天两夜超全攻略！",
-            "content": "Day1: 橘子洲头...",
-            "tags": ["长沙旅游", "攻略"],
-            "likes": 5234,
-        },
-        # ...
-    ]
-    
-    async def fetch_notes(self, keyword, city, limit):
-        return [NoteData(**note) for note in self.MOCK_NOTES[:limit]]
-```
-
-#### 小红书数据源
-
-```python
-class XiaohongshuDataSource(DataSource):
-    async def fetch_notes(self, keyword, city, limit):
-        # 1. 调用 XhsAdapter
-        result = await self.adapter.search(keyword, limit)
-        
-        # 2. 转换为 NoteData
-        notes = [self._convert_note(xhs_note, city) 
-                 for xhs_note in result.notes]
-        
-        return notes
-```
-
----
-
-### 5. LLM Pipeline 核心
-
-**文件**: `backend/app/services/llm/pipeline.py`
-
-#### Step 1: 文本清洗
-
-```python
-class TextCleaner:
-    def clean(self, text: str) -> str:
-        # 移除 emoji、特殊字符
-        text = self.remove_emojis(text)
-        # 标准化空白字符
-        text = re.sub(r'\s+', ' ', text)
-        return text.strip()
-```
-
-#### Step 2: Prompt 构建
-
-```python
-class DefaultPromptManager:
-    TEMPLATES = {
-        "travel_analysis": {
-            "system": "你是旅游内容分析专家...",
-            "user": """分析以下内容：
-标题: {title}
-内容: {content}
-标签: {tags}
-
-返回 JSON:
-{
-  "sentiment": "positive",
-  "summary": "...",
-  "keywords": [...],
-  "places": [...]
-}"""
-        }
-    }
-```
-
-#### Step 3: LLM 调用
-
-```python
-class VolcengineProvider:
-    async def chat_completion(self, system_prompt, user_content):
-        response = await self._client.chat.completions.create(
-            model="doubao-seed-1-6-251015",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-            ],
-            temperature=0.3,
-            max_tokens=4096,
-        )
-        return response.choices[0].message.content
-```
-
-#### Step 4: 响应解析
-
-```python
-class ResponseParser:
-    def parse(self, response_data: dict) -> AnalysisResult:
-        return AnalysisResult(
-            sentiment=response_data.get("sentiment", "neutral"),
-            user_intent=response_data.get("user_intent", "unknown"),
-            summary=response_data.get("summary", ""),
-            keywords=response_data.get("keywords", []),
-            places=self._parse_places(response_data.get("places", [])),
-            price_info=self._parse_price(response_data.get("price_info")),
-            tips=response_data.get("tips", []),
-        )
-```
-
----
-
-### 6. 批量处理与并发控制
-
-```python
-async def process_batch(self, notes: list[NoteData]):
-    semaphore = asyncio.Semaphore(self.concurrency)  # 最多 3 个并发
-    
-    async def process_with_semaphore(note):
-        async with semaphore:
-            return await self.process_note(note)
-    
-    # 并发处理所有笔记
-    results = await asyncio.gather(
-        *[process_with_semaphore(note) for note in notes]
-    )
-    
-    return BatchAnalysisResult(
-        results=results,
-        success_count=sum(1 for r in results if not r.error),
-    )
-```
-
----
-
-## 🎯 数据模型
-
-### NoteData (输入)
-
-```python
-class NoteData:
-    id: str
-    source: DataSourceType  # MOCK | XIAOHONGSHU
-    title: str
-    content: str
-    content_type: ContentType  # ATTRACTION | DINING | HOTEL | COMMUTE
-    tags: list[str]
-    location: str
-    city: str
-    likes: int
-    collects: int
-    comments: int
-    images: list[str]
-```
+**关键说明**：
+- 前端通过 `AnalyzeSearchRequest.source` 控制数据源：`auto` / `xiaohongshu` / `mock`。
+- 推荐默认使用 `source: "auto"`（真实数据优先，失败自动降级到 mock）。
+- 类型定义与请求参数见：`src/services/api/analyzeService.ts`。
 
 ### AnalysisResult (输出)
 
-```python
-class AnalysisResult:
-    note_id: str
-    source: DataSourceType
-    sentiment: str  # positive | negative | neutral
-    user_intent: str  # recommendation | warning | sharing | questioning
-    summary: str
-    keywords: list[str]
-    places: list[PlaceInfo]
-    price_info: PriceInfo | None
-    tips: list[str]
-    highlights: list[str]
-    concerns: list[str]
-    metadata: dict
-    error: str | None
-```
+结果模型以代码为准：`backend/app/services/llm/models.py`。
 
 ---
 
-## 🚀 完整调用示例
-
-### 测试 Mock 数据流程
+## 调用示例
 
 ```bash
 # 1. 启动后端
@@ -397,7 +191,7 @@ curl -X POST http://localhost:8000/api/analyze/search \
   -d '{
     "keyword": "长沙美食",
     "city": "长沙",
-    "source": "mock",
+    "source": "auto",
     "limit": 3
   }'
 
@@ -415,7 +209,7 @@ curl http://localhost:8000/api/analyze/status
 const response = await analyzeService.analyzeSearch({
   keyword: "长沙美食推荐",
   city: "长沙",
-  source: "mock",
+  source: "auto",
   limit: 5,
 });
 
@@ -431,29 +225,7 @@ const response = await analyzeService.analyzeSearch({
 
 ---
 
-## ⚙️ 环境配置
-
-### 必需环境变量 (backend/.env)
-
-```bash
-# Volcengine (豆包) API Key
-VOLCENGINE_API_KEY=your-api-key-here
-VOLCENGINE_MODEL=doubao-seed-1-6-251015
-VOLCENGINE_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
-VOLCENGINE_TEMPERATURE=0.3
-VOLCENGINE_MAX_TOKENS=4096
-```
-
-### 检查配置
-
-```bash
-curl http://localhost:8000/api/analyze/status
-# 应返回: "api_key_configured": true
-```
-
----
-
-## 🐛 常见问题排查
+## 常见问题排查
 
 ### 1. "搜索失败" 但无错误信息
 
@@ -471,42 +243,12 @@ curl http://localhost:8000/api/analyze/status
 
 ### 2. CORS 错误
 
-**原因**: 浏览器预览代理地址未添加到 CORS 白名单
-
-**解决**: 在 `backend/main.py` 添加:
-```python
-allow_origins=[
-    "http://127.0.0.1:4698",  # Windsurf browser preview
-]
-```
-
-### 3. 小红书爬虫不可用
-
-**原因**: MediaCrawler 未配置或登录态失效
-
-**临时方案**: 使用 `source: "mock"` 测试流程
+- **原因**: 前端地址未加入后端 CORS 白名单
+- **处理**: 检查 `backend/main.py` 的 CORS 配置（将当前前端地址加入 allow_origins）
 
 ---
 
-## 📈 性能指标
+## 最后更新
 
-- **单条笔记处理时间**: ~2-3秒 (取决于 LLM API)
-- **批量处理 5 条**: ~3-5秒 (并发数=3)
-- **文本清洗**: <0.01秒
-- **Prompt 构建**: <0.01秒
-- **JSON 解析**: <0.01秒
-
----
-
-## 🔮 后续优化方向
-
-1. **缓存层**: Redis 缓存 LLM 响应，避免重复调用
-2. **流式响应**: 支持 SSE 实时返回分析结果
-3. **多模态**: 支持图片内容分析
-4. **个性化**: 根据用户偏好调整 Prompt
-5. **A/B 测试**: 不同 Prompt 模板效果对比
-
----
-
-**最后更新**: 2025-12-15
+2025-12-19
 **维护者**: LiteTravel Team

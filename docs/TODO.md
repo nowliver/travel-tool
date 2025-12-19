@@ -4,6 +4,24 @@
 
 - [ ] feature：后端实现数据同步机制（离线/在线状态处理）
 
+- [x] refactor：统一收藏功能到 FloatingNavLayer，移除景点页面收藏 Tab，所有收藏显示类型标识
+
+- [x] feature：四个 View 页面（景点/美食/住宿/出行）均配置 AI 智能分析功能，使用 auto 数据源策略
+- [x] 第三方数据接入 (v2.5)
+  - [x] 小红书数据获取
+    - [x] 实现 XhsAdapter 集成 MediaCrawler
+    - [x] 实现游记/攻略内容提取
+    - [x] 实现图片和标签信息提取
+  - [x] 数据整合与展示
+    - [x] 统一数据格式 (NoteData, AnalysisResult)
+    - [x] 实现 auto 数据源策略（真实数据优先 + Mock 降级）
+  - [ ] 携程 API 接入 (待实现)
+  - [ ] 美团 API 接入 (待实现)
+  - [ ] 数据缓存策略 (待实现)
+
+## 归档部分
+- [x] docs：文档瘦身与口径一致性对齐（README/ARCHITECTURE/BACKEND_API/COMMANDS/LLM_PIPELINE_FLOW）
+
 - [x] bug：右键节点弹窗距离右键点击位置遥远（使用 Portal 渲染到 body 解决 transform 影响）
 - [x] bug：无法搜索到其他城市，考虑为rules中强制使用mock数据的原因
 - [x] bug：同样，在搜索景点的时候也只能搜索到一个固定位置的地点，考虑为rules中强制使用mock数据的原因
@@ -12,30 +30,7 @@
 - [x] new：行程节点变多或展开时左侧栏滚动条导致布局抖动 → 使用 overflow-y-scroll + no-scrollbar
 - [x] new：点击节点的...按钮时，在按钮位置呼出菜单（使用 getBoundingClientRect 定位）
 - [x] feature：不只是景点，住宿和美食都需要有各自独立的收藏夹（已实现后端 API + 前端组件 + 拖拽功能）
-- [x] refactor：统一收藏功能到 FloatingNavLayer，移除景点页面收藏 Tab，所有收藏显示类型标识
 - [x] feature：使用 react-hot-toast 替换浏览器默认 alert 提示，提升用户体验
-
-- [ ] feature：四个 View 页面（景点/美食/住宿/出行）均配置 AI 智能分析功能，现在输入框不显示，先考虑好输入框放在哪里
-- [ ] 第三方数据接入：接入携程、美团、小红书的 API 或通过爬虫获取信息
-  - [ ] 携程 API 接入
-    - [ ] 研究携程开放平台 API 文档
-    - [ ] 实现景点/酒店/美食信息获取接口
-    - [ ] 实现价格和评价信息获取
-  - [ ] 美团 API 接入
-    - [ ] 研究美团开放平台 API 文档
-    - [ ] 实现本地生活服务信息获取（美食/酒店/景点）
-    - [ ] 实现评分和评论数据获取
-  - [ ] 小红书数据获取
-    - [ ] 评估小红书 API 可用性
-    - [ ] 如无 API，设计爬虫方案（遵守 robots.txt 和法律法规）
-    - [ ] 实现游记/攻略内容提取
-    - [ ] 实现图片和标签信息提取
-  - [ ] 数据整合与展示
-    - [ ] 统一数据格式（不同类型来源的数据标准化）
-    - [ ] 在 LocationDetailBar 中展示第三方数据（评分、价格、攻略链接）
-    - [ ] 实现数据缓存策略（减少 API 调用）
-
-## 归档部分
 
 - [x] Phase 0: 基础架构搭建
   - [x] 创建 services 目录结构 (sources/, llm/, content/)

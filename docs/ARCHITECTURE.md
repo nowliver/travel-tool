@@ -1,855 +1,222 @@
-# LiteTravel - Architecture Documentation
-
-> **Last Updated**: 2025-12-19  
-> **Version**: 2.5.0  
-> **Status**: Active Development
-
----
-
-## 📐 System Overview
-
-LiteTravel is a **full-stack** travel planning application combining map visualization with itinerary management. The architecture follows a **React + Zustand** frontend with a **FastAPI** backend for user authentication and data persistence.
-
-### Core Concepts
-- **Full-Stack Architecture**: React frontend + FastAPI backend + SQLite/PostgreSQL
-- **JWT Authentication**: Secure user sessions with token-based auth
-- **Hybrid Storage**: Local-first with optional cloud sync for logged-in users
-- **Multi-Source Content**: Aggregated data from AMap, Ctrip, Xiaohongshu (v2.1+)
-- **Mock-First Strategy**: All services have mock implementations for offline development
-- **POI-Driven Interaction**: Map interactions revolve around Points of Interest (POI)
-- **Service Layer Isolation**: UI components never call APIs directly
-
----
-
-## 🔐 Backend Architecture (NEW in v2.0)
-
-### Technology Stack
-- **Framework**: Python FastAPI
-- **Database**: SQLite (dev) / PostgreSQL (prod)
-- **ORM**: SQLAlchemy
-- **Authentication**: JWT with bcrypt password hashing
-- **Validation**: Pydantic schemas
-
-### Backend Directory Structure
+# LiteTravel 架构文档
+ 
+ > **最后更新**: 2025-12-19  
+ > **版本**: 2.5.0  
+ > **状态**: 开发中
+ 
+ ---
+ 
+ ## 📐 系统概览
+ 
+ LiteTravel 是一个旅行规划应用：前端使用 **React + Zustand**，后端使用 **FastAPI** 提供认证与数据持久化，并集成多数据源（高德/小红书等）。
+ 
+ ### 核心概念
+ - **全栈架构**：React 前端 + FastAPI 后端 + SQLite/PostgreSQL
+ - **JWT 认证**：基于 Token 的用户会话
+ - **本地优先**：未登录可本地使用；登录后支持云端同步
+ - **多源内容**：高德 / 小红书（未来：携程/美团）
+ - **真实数据优先**：`source=auto` 自动选择，失败降级到 mock
+ - **POI 驱动交互**：围绕地图 POI 的选择、收藏、加入行程
+ - **服务层隔离**：UI 不直接调用外部 API，统一通过 `src/services/*`
+ 
+ ---
+ 
+ ## 🔐 后端架构（v2.0+）
+ 
+ ### 技术栈
+ - **框架**: Python FastAPI
+ - **数据库**: SQLite（开发） / PostgreSQL（生产）
+ - **ORM**: SQLAlchemy
+ - **认证**: JWT + bcrypt（密码哈希）
+ - **校验**: Pydantic schemas
+ 
+ ### 目录结构
+ - 入口：`backend/main.py`
+ - API 路由：`backend/app/api/*`
+ - 配置与安全：`backend/app/core/*`
+ - 数据库：`backend/app/db/*`、`backend/app/models/*`
+ - Schema：`backend/app/schemas/*`
+ - 业务服务：`backend/app/services/*`
+ - 爬虫：`backend/scrapers/*`
+ 
+ ### 内容服务架构（v2.1+）
+ 
+ ``` 
+ 用户请求 → /api/content/search
+     ↓
+ Content API（`backend/app/api/content.py`）
+     ↓
+ 数据源层（`backend/app/services/sources/*`）
+     ├── AmapSource (amap.py)     → 高德地图 POI API
+     ├── CtripSource (future)     → 携程酒店/机票
+     └── XiaohongshuSource (future) → 小红书攻略
+     ↓
+ 统一 Schema 转换（`backend/app/schemas/content.py`）
+     ↓
+ (Future) LLM 整合层 (llm/)
+     ↓
+ 返回标准化响应
 ```
-backend/
-├── app/
-│   ├── api/              # API Endpoints
-│   │   ├── auth.py       # POST /register, /login, /logout, GET /me
-│   │   ├── plans.py      # CRUD for /plans
-│   │   ├── favorites.py  # CRUD for /favorites (v2.4+)
-│   │   ├── content.py    # GET /content/search (v2.1+)
-│   │   └── deps.py       # get_current_user dependency
-│   ├── core/             # Core Configuration
-│   │   ├── config.py     # Environment settings (JWT_SECRET_KEY, DATABASE_URL, AMAP_KEY_WEB)
-│   │   └── security.py   # JWT encode/decode, password hashing
-│   ├── db/               # Database Layer
-│   │   └── base.py       # SQLAlchemy engine, session, Base class
-│   ├── models/           # SQLAlchemy Models
-│   │   ├── user.py       # User entity
-│   │   ├── itinerary.py  # ItineraryPlan entity
-│   │   └── favorite.py   # Favorite entity (v2.4+)
-│   ├── schemas/          # Pydantic Schemas
-│   │   ├── user.py       # UserCreate, UserLogin, Token, UserResponse
-│   │   ├── itinerary.py  # ItineraryCreate, ItineraryUpdate, ItineraryResponse
-│   │   ├── favorite.py   # FavoriteCreate, FavoriteResponse, FavoriteListResponse (v2.4+)
-│   │   └── content.py    # ContentCategory, AttractionItem, HotelItem, etc. (v2.1+)
-│   └── services/         # Business Logic Services (v2.1+)
-│       ├── sources/      # Data source integrations
-│       │   ├── base.py   # BaseSource abstract class
-│       │   └── amap.py   # 高德地图 POI API
-│       ├── llm/          # LLM processing pipeline
-│       └── content/      # Content aggregation (future)
-├── scrapers/             # Data scrapers (moved from root)
-│   ├── xhs/              # Xiaohongshu adapter
-│   └── integration/      # Scraper service integration
-├── .env                  # Environment variables (not committed)
-├── main.py               # FastAPI app entry point
-├── pyproject.toml        # uv dependencies (v2.0+)
-└── uv.lock               # Dependency lock file
+ 
+ #### 内容分类
+ 
+ | 类别 | 数据源 | Schema |
+ |------|--------|--------|
+ | 景点 (attraction) | 高德 + 小红书 | `AttractionItem` |
+ | 住宿 (hotel) | 携程 + 美团 | `HotelItem` |
+ | 美食 (dining) | 高德 + 小红书 | `DiningItem` |
+ | 出行 (commute) | 携程 + 高德 | `CommuteItem` |
+ 
+ ---
+ 
+ ## 🗺️ 核心模块与入口
+ 
+ - **布局/导航**：`src/components/layout/*`
+ - **地图**：`src/components/map/*`
+ - **行程**：`src/components/itinerary/*`
+ - **视图页（AI 分析）**：`src/components/views/*`
+ - **服务层**：`src/services/*`
+ - **状态**：`src/store/*`
+ 
+ ---
+ 
+ ## 🏗️ 交互与逻辑架构
+ 
+ ### 用户交互流
+ 
+#### 流程 1：地图空白区域右键
+``` 
+ 用户在地图空白区域右键
+     ↓
+ `MapContainer` 获取 `e.pixel` → 转为视口坐标
+     ↓
+ `mapService.fetchAddressByLocation(lng, lat)` 获取地址
+     ↓
+ `ContextMenu` 展示操作：加入收藏 / 加入行程（Day 1/2/3...）
+     ↓
+ 用户选择动作 → `favoriteService.addFavorite()`（后端 API）或 `tripStore.addNode()`
+     ↓
+ 地图右键默认类型为 `spot`
 ```
-
-### Content Service Architecture (v2.1+)
-
+ 
+ **定位说明**：右键菜单需要把 AMap 的 `e.pixel` 转换为浏览器视口坐标（实现见 `src/components/map/MapContainer.tsx`）。
+ 
+#### 流程 2：点击 Marker（POI 交互）
+``` 
+ 用户点击 Marker
+     ↓
+ `MapContainer` 判断是否 Marker 点击（通过 DOM target）
+     ↓
+ `mapService.fetchAddressByLocation()` 获取 POI 详情
+     ↓
+ `MapContainer` 设置 selectedPOI 并打开详情栏
+     ↓
+ `LocationDetailBar` 从底部弹出，支持：
+     - POI 名称/地址
+     - 加入收藏
+     - 加入行程（Day 1/2/3...）
 ```
-用户请求 → /api/content/search
-    ↓
-ContentAPI (content.py)
-    ↓
-DataSource 层 (sources/)
-    ├── AmapSource (amap.py)     → 高德地图 POI API
-    ├── CtripSource (future)     → 携程酒店/机票
-    └── XiaohongshuSource (future) → 小红书攻略
-    ↓
-统一 Schema 转换 (schemas/content.py)
-    ↓
-(Future) LLM 整合层 (llm/)
-    ↓
-返回标准化响应
+ 
+ **点击判定**：通过 DOM target 判断是否 Marker 点击（实现见 `src/components/map/MapContainer.tsx`）。
+ 
+#### 流程 3：点击地图空白区域（清理状态）
+``` 
+ 用户点击地图非 Marker 区域
+     ↓
+ `MapContainer` 清理：
+     - highlightedLocation（黄色 Marker）
+     - contextMenu
+     - clickedLocation
+     - selectedPOI + isDetailBarOpen
 ```
-
-#### Content Categories
-
-| 类别 | 数据源 | Schema |
-|------|--------|--------|
-| 景点 (attraction) | 高德 + 小红书 | `AttractionItem` |
-| 住宿 (hotel) | 携程 + 美团 | `HotelItem` |
-| 美食 (dining) | 高德 + 小红书 | `DiningItem` |
-| 出行 (commute) | 携程 + 高德 | `CommuteItem` |
-
-### Toast Notification System (v2.5+)
-
-**技术方案**：使用 `react-hot-toast` 替代浏览器默认 `alert()`，提供统一的暗色主题通知样式。
-
-**配置** (`src/App.tsx`):
-```typescript
-<Toaster
-  position="top-center"
-  toastOptions={{
-    duration: 3000,
-    style: {
-      background: "rgba(24, 24, 27, 0.95)",
-      color: "#e4e4e7",
-      border: "1px solid rgba(255, 255, 255, 0.04)",
-      borderRadius: "12px",
-      backdropFilter: "blur(12px)",
-    },
-    success: { iconTheme: { primary: "#22c55e" } },
-    error: { iconTheme: { primary: "#ef4444" } },
-  }}
-/>
+ 
+#### 流程 4：右键行程条目
+``` 
+ 用户右键 `NodeCard`
+     ↓
+ `ContextMenu` 展示：
+     - 加入收藏
+     - 在地图中定位
+     - 删除（危险操作）
+     ↓
+ 用户选择 → 执行对应的 Store action
 ```
-
-**使用场景**：
-- 登录验证失败 → `toast.error("请先登录")`
-- 添加收藏成功 → `toast.success("已添加到收藏")`
-- API 调用失败 → `toast.error("添加收藏失败")`
-
-**替换位置**：
-- `MapContainer.tsx`: 右键菜单和 POI 详情栏的收藏操作
-- `NodeCard.tsx`: 行程节点的收藏操作
-
-### AI Analysis in All Views (v2.5+)
-
-**统一 AI 分析功能**：四个 View 页面均配置 AI 智能分析，使用相同的 UI 模式和数据流。
-
-**View 配置**：
-```typescript
-// AttractionsView - 景点探索（绿色主题 #22c55e）
-template: undefined, icon: MapPin
-
-// DiningView - 美食探店（橙色主题 #f97316）
-template: "dining_analysis", icon: UtensilsCrossed
-
-// AccommodationView - 住宿推荐（蓝色主题 #3b82f6）
-template: "hotel_analysis", icon: Building2
-
-// CommuteView - 出行交通（紫色主题 #a855f7）
-template: undefined, icon: Train
-```
-
-**搜索流程**：
-```
-用户输入关键词 → handleSearch()
-    ↓
-analyzeService.analyzeSearch({ keyword, city, source: "mock", limit: 5, template })
-    ↓
-后端 /api/analyze/search (LLM Pipeline)
-    ↓
-返回 AnalysisResult[] → 使用 AnalysisCard 组件展示
-    ↓
-支持：查看详情、定位到地图、添加到行程
-```
-
-**共享组件**：
-- `AnalysisCard`: 统一的结果卡片，根据 `type` 参数调整样式
-- 错误处理：使用统一的错误提示样式
-- 空结果提示：各 View 使用对应主题色和图标
-
-### Favorites Architecture (v2.4+)
-
-**统一收藏管理**：
-- 所有收藏功能集中在 FloatingNavLayer 的收藏标签页（FavoritesView）
-- AttractionsView 只保留 AI 探索功能，不再有收藏 Tab
-- 收藏项显示类型徽章（景点/美食/住宿）
-
-**类型判断规则**：
-- 右键行程节点 → 使用节点的 `type` 字段（spot/hotel/dining）
-- 右键地图位置 → 默认为 `"spot"` (景点)
-
-**收藏数据流**：
-```
-用户操作 → favoriteService.addFavorite() → 后端 API (/api/favorites)
-    ↓
-后端保存（user_id + type + name + location）
-    ↓
-FavoritesView 加载 → 按类型分组显示 + 类型徽章
-    ↓
-支持拖拽到行程 + 地图定位
-```
-
-### Scrapers Module (v2.1+)
-
-独立的爬虫模块，集成 MediaCrawler 获取小红书数据：
-
-```
-scrapers/
-├── xhs/                    # 小红书适配器
-│   ├── adapter.py          # XhsAdapter - MediaCrawler 封装
-│   ├── models.py           # XhsNote, XhsSearchResult
-│   └── config.py           # 爬虫配置
-├── integration/            # 与后端集成
-│   └── service.py          # ScraperService 统一接口
-└── data/                   # 缓存数据目录
-```
-
-**技术方案**:
-- 通过 subprocess 调用 MediaCrawler
-- 解析 MediaCrawler 输出的 JSON 数据
-- 转换为 travel-tool 统一 Schema
-- 支持结果缓存，减少重复请求
-
-**注意事项**:
-- 首次使用需通过 MediaCrawler 扫码登录
-- 仅用于学习研究，禁止商业用途
-- 控制请求频率，遵守平台规则
-
-### LLM Pipeline Architecture (v2.1+)
-
-ETL 流水线架构，用于处理多源旅游内容：
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Application Layer                         │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │              Pipeline Orchestrator                       ││
-│  │  (fetch_and_process, process_batch, process_note)       ││
-│  └─────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│                    Processing Layer                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ TextCleaner  │  │ LLMProvider  │  │ResponseParser│      │
-│  │ (去Emoji/广告)│  │ (火山引擎)   │  │ (JSON解析)   │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│                           │                                  │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │              PromptManager (模板管理)                    ││
-│  │  travel_analysis | dining_analysis | hotel_analysis     ││
-│  └─────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│                    Ingestion Layer                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │XiaohongshuDS │  │  CtripDS     │  │  MeituanDS   │      │
-│  │ (小红书)      │  │  (携程)      │  │  (美团)      │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**核心接口** (`interfaces.py`):
-- `DataSource`: 数据源抽象 (`fetch_notes`, `fetch_note_detail`)
-- `LLMProvider`: LLM 提供商抽象 (`chat_completion`)
-- `DataProcessor`: 数据处理抽象 (`clean`, `parse_response`)
-- `PromptManager`: Prompt 管理抽象 (`get_template`, `build_prompt`)
-
-**数据流**:
-1. DataSource 获取原始数据 → NoteData
-2. TextCleaner 清洗文本
-3. PromptManager 构建 Prompt
-4. LLMProvider 调用大模型
-5. ResponseParser 解析响应 → AnalysisResult
-
-### Data Models
-
-#### User
-```python
-class User:
-    id: str (UUID)
-    email: str (unique, indexed)
-    hashed_password: str
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
-```
-
-#### ItineraryPlan
-```python
-class ItineraryPlan:
-    id: str (UUID)
-    user_id: str (ForeignKey -> User)
-    title: str
-    description: str (optional)
-    content_json: JSON  # Contains {meta, days} matching frontend TripStoreState
-    created_at: datetime
-    updated_at: datetime
-```
-
-#### Favorite (v2.4+)
-```python
-class Favorite:
-    id: str (UUID)
-    user_id: str (ForeignKey -> User)
-    type: str (spot | hotel | dining)
-    name: str
-    address: str (optional)
-    location: JSON  # {lat: float, lng: float}
-    created_at: datetime
-```
-
-### Authentication Flow
-```
-User Register/Login
-  ↓
-[POST /api/auth/register or /login]
-  ↓
-Backend validates credentials → bcrypt.verify()
-  ↓
-Generate JWT token with user_id in payload
-  ↓
-Return { access_token, user }
-  ↓
-Frontend stores token in localStorage
-  ↓
-Subsequent requests include: Authorization: Bearer <token>
-  ↓
-[get_current_user dependency] decodes token → returns User
-```
-
-### API Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/api/auth/register` | No | Create new user account |
-| POST | `/api/auth/login` | No | Authenticate and get token |
-| GET | `/api/auth/me` | Yes | Get current user info |
-| POST | `/api/auth/logout` | Yes | Logout (client discards token) |
-| GET | `/api/plans` | Yes | List user's itineraries |
-| POST | `/api/plans` | Yes | Create new itinerary |
-| GET | `/api/plans/{id}` | Yes | Get itinerary details |
-| PUT | `/api/plans/{id}` | Yes | Update itinerary |
-| DELETE | `/api/plans/{id}` | Yes | Delete itinerary |
-| GET | `/api/favorites` | Yes | List user's favorites (filter by type) |
-| GET | `/api/favorites/grouped` | Yes | Get favorites grouped by type |
-| POST | `/api/favorites` | Yes | Add new favorite |
-| DELETE | `/api/favorites/{id}` | Yes | Delete favorite |
-
-### Environment Variables
-
-**统一配置方案**: 所有环境变量统一在 `backend/.env` 中管理。
-
-前端通过 Vite 的 `envDir: "./backend"` 配置自动读取，无需单独的前端 `.env` 文件。
-
-```
-backend/.env
-├── JWT_SECRET_KEY          # 后端专用
-├── DATABASE_URL            # 后端专用
-├── AMAP_KEY_WEB            # 后端 POI 搜索
-├── AMAP_KEY_WEB_JS         # 后端 /api/config 提供
-├── VITE_AMAP_KEY_WEB_JS    # 前端地图加载 (Vite 暴露)
-├── GOOGLE_API_KEY          # 后端专用
-└── VOLCENGINE_*            # LLM 配置
-```
-
-**配置文件示例** (`backend/.env`):
-```
-# JWT 认证
-JWT_SECRET_KEY=<secret-key>      # MUST change in production
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-
-# 数据库
-DATABASE_URL=sqlite:///./litetravel.db
-
-# 高德地图 (AMap)
-AMAP_KEY_WEB=<web-service-key>       # 后端 POI 搜索
-AMAP_KEY_WEB_JS=<js-api-key>         # 后端配置 API
-VITE_AMAP_KEY_WEB_JS=<js-api-key>    # 前端地图加载 (同上)
-
-# Google API
-GOOGLE_API_KEY=<google-key>
-
-# 火山引擎 LLM
-VOLCENGINE_API_KEY=<api-key>
-VOLCENGINE_MODEL=doubao-seed-1-6-251015
-```
-
-### Configuration API
-
-后端提供 `/api/config` 端点，返回前端所需的公开配置：
-
-```typescript
-// GET /api/config
-{
-  amap_key_web_js: string | null,
-  app_name: string,
-  app_version: string
-}
-```
-
----
-
-## 🗺️ Core Components Map
-
-### Layout Components
-
-| Component | Path | Responsibility |
-|-----------|------|----------------|
-| `Shell` | `src/components/layout/Shell.tsx` | Root layout container (sidebar + map split) |
-| `ResizeHandle` | `src/components/layout/ResizeHandle.tsx` | Draggable sidebar width control (12px hit area) |
-| `FloatingNavLayer` | `src/components/layout/FloatingNavLayer.tsx` | Floating navigation drawer (Attractions/Hotel/Dining/Commute) |
-
-### Map Components
-
-| Component | Path | Key Props | Responsibility |
-|-----------|------|-----------|----------------|
-| `MapContainer` | `src/components/map/MapContainer.tsx` | - | AMap integration, event handlers, marker management |
-| `LocationDetailBar` | `src/components/map/LocationDetailBar.tsx` | `poi`, `isOpen`, `onAddToFavorites`, `onAddToPlan` | Bottom sheet for POI details and actions |
-
-**MapContainer State**:
-```typescript
-selectedPOI: {
-  name: string;
-  location: GeoLocation;
-  address?: string;
-  type?: NodeType;
-} | null
-
-isDetailBarOpen: boolean
-```
-
-**MapContainer Event Handlers**:
-- `map.on("rightclick")` → Show context menu with "Add to Favorites/Plan"
-- `map.on("click")` → 
-  - If Marker click → Open `LocationDetailBar`
-  - If blank area → Clear highlights & close menus
-
-### Itinerary Components
-
-| Component | Path | Key Features |
-|-----------|------|--------------|
-| `ItineraryPanel` | `src/components/itinerary/ItineraryPanel.tsx` | Day management, search, drag-drop orchestration |
-| `NodeCard` | `src/components/itinerary/NodeCard.tsx` | Right-click context menu (Add to Favorites / Locate / Delete) |
-| `DayTabs` | `src/components/itinerary/DayTabs.tsx` | Day switcher with `@dnd-kit` droppable zones |
-
-### UI Utilities
-
-| Component | Path | Features |
-|-----------|------|----------|
-| `ContextMenu` | `src/components/ui/ContextMenu.tsx` | Config-driven, sub-menu support, click-away dismiss |
-| `AnalysisCard` | `src/components/ui/AnalysisCard.tsx` | Unified card for displaying LLM analysis results (attraction/dining/hotel/commute) |
-| `ConfirmModal` | `src/components/ui/ConfirmModal.tsx` | Apple-style confirm dialog (glass, rounded, consistent actions) |
-
-### Map UI Enhancements
-
-| Item | Path | Notes |
-|------|------|------|
-| `CustomMarker` | `src/components/map/CustomMarker.ts` | Helper for AMap marker HTML (`buildSelectedMarkerHtml`) |
-
-### UI Style Rules
-
-- `no-scrollbar` (defined in `src/index.css`): hide scrollbars but keep scrolling behavior (used in DayTabs and ContextMenu submenu).
-- Selected marker styling (defined in `src/index.css`):
-  - `.lt-selected-marker` (emerald halo + pulse)
-  - `.lt-selected-label` (glass label)
-  - `@keyframes lt-marker-pulse`
-
-### Auth Components
-
-| Component | Path | Features |
-|-----------|------|----------|
-| `AuthModal` | `src/components/auth/AuthModal.tsx` | Login/Register modal with emerald theme |
-| `PlansModal` | `src/components/auth/PlansModal.tsx` | Cloud-synced itinerary list modal |
-| `UserMenu` | `src/components/auth/UserMenu.tsx` | User dropdown menu with logout |
-
-### View Components (LLM 集成)
-
-| Component | Path | Features |
-|-----------|------|----------|
-| `AttractionsView` | `src/components/views/AttractionsView.tsx` | AI 探索 + 收藏 Tab，搜索景点攻略 |
-| `DiningView` | `src/components/views/DiningView.tsx` | 美食探店，LLM 分析推荐 |
-| `AccommodationView` | `src/components/views/AccommodationView.tsx` | 住宿推荐，酒店/民宿搜索 |
-| `CommuteView` | `src/components/views/CommuteView.tsx` | 出行交通，高铁/机票/地铁攻略 |
-
-**前端 LLM 集成架构**:
-```
-User Input (搜索关键词)
-  ↓
-[analyzeService.analyzeSearch()]
-  ↓
-POST /api/analyze/search { keyword, city, source, limit }
-  ↓
-Backend Pipeline: DataSource → TextCleaner → LLM → ResponseParser
-  ↓
-Return BatchAnalysisResult { results[], success_count, processing_time }
-  ↓
-[AnalysisResultCard] 展示分析结果 (sentiment, summary, tips, places)
-```
-
----
-
-## 🏗️ Logical Architecture
-
-### User Interaction Flows
-
-#### Flow 1: Right-Click on Map (空白区域)
-```
-User Right-Clicks Map (Blank Area)
-  ↓
-[MapContainer] Captures `e.pixel` → Convert to viewport coords
-  ↓
-[MapService] fetchAddressByLocation(lng, lat)
-  ↓
-[ContextMenu] Shows: "Add to Favorites" | "Add to Plan (Day 1/2/3...)"
-  ↓
-User Selects Action → favoriteService.addFavorite() (backend API) or Store.addNode()
-  ↓
-[Right-click on map → type defaults to "spot"]
-```
-
-**Coordinate Fix**:
-```typescript
-// ❌ Old (Incorrect)
-{ clientX: e.pixel.x, clientY: e.pixel.y }
-
-// ✅ Fixed (Correct)
-const containerRect = containerRef.current?.getBoundingClientRect();
-{ 
-  clientX: containerRect.left + e.pixel.x,
-  clientY: containerRect.top + e.pixel.y 
-}
-```
-
-#### Flow 2: Click on Map Marker (POI 交互)
-```
-User Clicks Marker
-  ↓
-[MapContainer] Detects isMarkerClick (via DOM target inspection)
-  ↓
-[MapService] fetchAddressByLocation() → Get POI details
-  ↓
-[MapContainer] setSelectedPOI() + setIsDetailBarOpen(true)
-  ↓
-[LocationDetailBar] Slides up from bottom with:
-  - POI name/address
-  - "Add to Favorites" button
-  - "Add to Plan" dropdown (Day 1/2/3...)
-```
-
-**Marker Detection Logic**:
-```typescript
-const isMarkerClick = target && (
-  target.classList?.contains('amap-marker') ||
-  target.closest('.amap-marker') ||
-  target.closest('[class*="amap-marker"]')
-);
-```
-
-#### Flow 3: Click on Map Blank Area (清除状态)
-```
-User Clicks Map (Non-Marker Area)
-  ↓
-[MapContainer] Clears:
-  - highlightedLocation (yellow marker)
-  - contextMenu
-  - clickedLocation
-  - selectedPOI + isDetailBarOpen
-```
-
-#### Flow 4: Right-Click on Itinerary Item
-```
-User Right-Clicks NodeCard
-  ↓
-[ContextMenu] Shows:
-  - Add to Favorites
-  - Locate on Map
-  - Delete (danger style)
-  ↓
-User Selects → Execute corresponding Store action
-```
-
----
-
-## 📦 State Management
-
+ 
+ ---
+ 
+ ## 📦 状态管理
+ 
 ### Zustand Store (`src/store/tripStore.ts`)
+ 
+ **文件**：`src/store/tripStore.ts`
+ 
+ **关键点**：
+ - 行程结构：`meta` + `days`
+ - UI 状态：侧栏宽度、确认城市、地图高亮点
+ - 收藏：按类型管理，支持拖拽加入行程
+ 
+ ---
+ 
+ ## 🛠️ 服务层
+ 
+### API Services（v2.0+）
 
-**Core State**:
-```typescript
-{
-  // Trip data
-  meta: TripMeta;
-  days: DayPlan[];
-  
-  // UI State
-  sidebarWidth: number; // px (280-520)
-  isResizingSidebar: boolean;
-  confirmedCity: string | null; // Triggers map jump
-  highlightedLocation: { location, name } | null; // Yellow marker
-  
-  // Favorites
-  favorites: FavoriteItem[];
-}
-```
+前端与后端通信统一放在 `src/services/api/`，以代码为准：
 
-**Key Actions**:
-- `addNode(dayIndex, node)` → Generates UUID for node ID
-- `addFavorite(item)` → Auto-generates `id` and `addedAt`
-- `setHighlightedLocation(loc)` → Triggers yellow marker on map
-- `setSidebarWidth(width)` → Updates layout (FloatingNavLayer tracks this)
-
----
-
-## 🛠️ Service Layer
-
-### API Services (NEW in v2.0)
-
-Frontend services for backend communication located in `src/services/api/`:
-
-| Service | Path | Responsibility |
-|---------|------|----------------|
-| `apiClient` | `api/apiClient.ts` | Base HTTP client with JWT token management |
-| `authService` | `api/authService.ts` | Login, register, logout, session management |
-| `planService` | `api/planService.ts` | CRUD operations for itinerary plans |
-
-**API Client Features**:
-```typescript
-// Automatic token injection
-const headers = { Authorization: `Bearer ${token}` };
-
-// Token management
-setAuthToken(token)    // Store in localStorage
-removeAuthToken()      // Clear on logout
-isAuthenticated()      // Check if token exists
-```
-
-**Auth Service Interface**:
-```typescript
-interface AuthService {
-  register(credentials): Promise<User>;
-  login(credentials): Promise<User>;
-  logout(): Promise<void>;
-  getCurrentUser(): Promise<User | null>;
-  isAuthenticated(): boolean;
-}
-```
-
-**Plan Service Interface**:
-```typescript
-interface PlanService {
-  listPlans(): Promise<ItineraryListItem[]>;
-  getPlan(id): Promise<ItineraryPlan>;
-  createPlan(data): Promise<ItineraryPlan>;
-  updatePlan(id, data): Promise<ItineraryPlan>;
-  deletePlan(id): Promise<void>;
-  savePlan(id, title, meta, days): Promise<ItineraryPlan>;
-}
-```
-
-### Auth Store (`src/store/authStore.ts`)
-
-Zustand store for authentication state:
-```typescript
-interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  isInitialized: boolean;
-  error: string | null;
-}
-
-interface AuthActions {
-  login(email, password): Promise<void>;
-  register(email, password): Promise<void>;
-  logout(): Promise<void>;
-  initialize(): Promise<void>;  // Called on app mount
-}
-```
-
-### Map Service (`src/services/mapService.ts`)
-
-**Interface**:
-```typescript
-interface MapServiceApi {
-  search(keyword, city?, bounds?): Promise<MapSearchResult[]>;
-  searchCity(keyword): Promise<CitySearchResult[]>;
-  fetchAddressByLocation(lng, lat): Promise<AddressResult>;
-  getRoute(start, end): Promise<RouteResult>;
-}
-```
-
-**Return Types**:
-```typescript
-AddressResult = {
-  name: string;      // POI 名称（经过清洗，优先使用 POI/AOI/Building 名称）
-  address?: string;  // 短地址（已去除省市）或完整地址
-}
-```
-
-**API Configuration**:
-- **Endpoint**: `/amap/v3/geocode/regeo`
-- **Parameters**: 
-  - `extensions=all` - 返回 POI 和 AOI 详细信息
-  - `radius=1000` - 搜索半径 1000 米
-- **Mock Fallback**: If `!import.meta.env.VITE_AMAP_KEY_WEB_JS` → Use `mockMapService`
-- **Proxy**: Real API calls use Vite proxy (`/amap/*`) to avoid CORS
-
-### POI Data Formatting (`src/services/utils/formatPOI.ts`)
-
-**清洗策略 (Smart Formatting Strategy)**:
-
-执行顺序（降级链）:
-1. **Step 1 (POI)**: 读取 `regeocode.pois[0].name`
-   - 如果存在，使用 POI 名称作为 `name`
-   - 地址优先使用 `pois[0].address`，否则使用处理后的 `formatted_address`
-
-2. **Step 2 (AOI)**: 如果无 POI，读取 `regeocode.aois[0].name`
-   - 使用 AOI 名称作为 `name`
-   - 地址使用处理后的 `formatted_address`
-
-3. **Step 3 (Building)**: 如果都无，读取 `addressComponent.building.name`
-   - 使用建筑物名称作为 `name`
-   - 地址使用处理后的 `formatted_address`
-
-4. **Step 4 (Fallback)**: 最后降级为 `formatted_address`
-   - 去除省市名称后作为 `name`
-   - 完整地址保留在 `address` 字段
-
-**去冗余处理**:
-- `removeProvinceAndCity()`: 从 `formatted_address` 中移除 `province` 和 `city` 字符串
-- 例如: `"湖南省长沙市岳麓区登高路58号"` → `"岳麓区登高路58号"`
-
-**Type Definitions** (`src/types/amap.d.ts`):
-```typescript
-interface AmapRegeoResponse {
-  status: string;
-  regeocode?: AmapRegeocode;
-}
-
-interface AmapRegeocode {
-  formatted_address: string;
-  addressComponent: AmapAddressComponent;
-  pois?: AmapPOI[];    // extensions=all 时返回
-  aois?: AmapAOI[];    // extensions=all 时返回
-}
-```
-
----
-
-## 🔧 Technical Constraints
-
-### Coordinate Systems
-- **AMap `e.pixel`**: Container-relative coords (需转换)
-- **Browser `clientX/Y`**: Viewport coords (菜单定位使用)
-- **AMap `lnglat`**: Geographic coords (WGS-84)
-
-### Event Bubbling
-- Context menu uses `e.stopPropagation()` to prevent double-triggers
-- Map click handler checks `isMarkerClick` to avoid clearing POI state
-
-### Drag & Drop
-- Uses `@dnd-kit` (not `react-beautiful-dnd`)
-- `SortableContext` for same-day reorder
-- `DndContext.onDragEnd` handles cross-day moves
-
----
-
-## 📝 Code Style Guide
-
-### Component Props Pattern
-```typescript
-// ✅ Good: Named exports with Props interface
-export interface FooProps { ... }
-export function Foo({ ... }: FooProps) { ... }
-```
-
-### Service Calls
-```typescript
-// ❌ Bad: Direct fetch in components
-const res = await fetch('/amap/...');
-
-// ✅ Good: Use service layer
-const result = await mapService.fetchAddressByLocation(lng, lat);
-```
-
-### Zustand Selectors
-```typescript
-// ❌ Bad: Creates new array every render
-const allNodes = useTripStore((s) => s.days.flatMap(...));
-
-// ✅ Good: Derive in useEffect
-const days = useTripStore((s) => s.days);
-useEffect(() => {
-  const allNodes = days.flatMap(...);
-}, [days]);
-```
-
----
-
-## 🚀 Recent Changes
-
-### v1.2.0 (2025-12-10)
-
-#### POI 数据清洗优化
-1. **Smart POI Formatting**
-   - 实现降级策略：POI → AOI → Building → formatted_address
-   - 自动去除地址中的省市名称，生成短地址
-   - 使用 `extensions=all` 获取完整 POI/AOI 信息
-
-2. **Type Safety**
-   - 新增 `src/types/amap.d.ts` 完整 API 响应类型定义
-   - 基于官方文档的结构定义，确保类型一致性
-
-3. **Utils 模块化**
-   - 创建 `src/services/utils/formatPOI.ts` 独立清洗函数
-   - 纯函数设计，易于测试和维护
-
-### v1.1.0
-
-#### Bug Fixes
-1. **Fixed Context Menu Positioning**  
-   - Issue: Menu appeared offset from cursor  
-   - Fix: Convert `e.pixel` to viewport coords using container `getBoundingClientRect()`
-
-2. **Added Blank Click Handler**  
-   - Issue: Highlight markers couldn't be dismissed  
-   - Fix: `map.on("click")` checks `isMarkerClick` and clears state for blank areas
-
-#### New Features
-3. **LocationDetailBar Component**  
-   - Bottom sheet for POI details  
-   - Slides up on Marker click, slides down on blank click  
-   - Moved "Add to Favorites/Plan" from context menu to here
-
-4. **POI-Driven Interaction**  
-   - Click Marker → Show POI details  
-   - Right-Click → Show quick actions menu  
-   - Blank Click → Clear all overlays
-
----
-
-## 🔮 Future Enhancements
-
-### Short-Term
-- [ ] Add POI ratings/photos in `LocationDetailBar`
-- [ ] Implement "双击地图 = 快速添加到当前日" shortcut
-- [ ] Add loading spinner for `fetchAddressByLocation`
-
-### Long-Term
-- [ ] Migrate to Next.js for SSR
-- [ ] Replace mock with real Python backend
-- [ ] Add collaborative editing (WebSocket)
-
----
-
-## 📚 References
-
-- [AMap JS API v2.0](https://lbs.amap.com/api/javascript-api/summary)
-- [AMap Regeo API Documentation](https://lbs.amap.com/api/webservice/guide/api/georegeo)
-- [Zustand Docs](https://docs.pmnd.rs/zustand)
-- [@dnd-kit Documentation](https://docs.dndkit.com/)
-
----
-
-*This document is actively maintained. Please update when adding new components or changing core flows.*
+- `apiClient`：`src/services/api/apiClient.ts`
+- `authService`：`src/services/api/authService.ts`
+- `planService`：`src/services/api/planService.ts`
+- `favoriteService`：`src/services/api/favoriteService.ts`
+ 
+ **关键点**：
+ - `apiClient` 负责 token 注入与错误处理（`src/services/api/apiClient.ts`）
+ - `authService` / `planService` / `favoriteService` 对应后端资源（见 `src/services/api/*`）
+ 
+ ---
+ 
+ ## 🔧 技术约束
+ 
+ ### 坐标系统
+ 
+ - **AMap `e.pixel`**：相对地图容器坐标（需要转换）
+ - **浏览器 `clientX/Y`**：浏览器视口坐标（菜单定位使用）
+ - **AMap `lnglat`**：地理坐标
+ 
+ ---
+ 
+ ## 📝 代码风格
+ 
+ 本项目的代码风格与硬约束以 `.windsurfrules` 为准（避免重复维护）。
+ 
+ - **服务调用**：UI 不直接 fetch，必须通过 `src/services/*`
+ - **Zustand**：selector 不创建新数组/对象
+ - **后端**：只用 `uv`；只用 SQLAlchemy ORM；路由与 schema 分层
+ 
+ ---
+ 
+ ## 🚀 近期变更
+ 
+ - 主要变更以 `docs/TODO.md` 与 Git 历史为准。
+ - 与架构相关的关键点：POI 清洗（`src/services/utils/formatPOI.ts`）、AI 分析 `source=auto`。
+ - 细节实现以代码为准。
+ 
+ ---
+ 
+ ## 🔮 后续计划
+ 
+ - 后续待办以 `docs/TODO.md` 为准。
+ - 新数据源（携程/美团）与缓存策略：计划中。
+ - 与本文件重复的细节不再维护。
+ 
+ ---
+ 
+ ## 📚 参考链接
+ 
+- [高德地图 JS API v2.0](https://lbs.amap.com/api/javascript-api/summary)
+- [高德地图逆地理编码（Regeo）](https://lbs.amap.com/api/webservice/guide/api/georegeo)
+- [Zustand](https://docs.pmnd.rs/zustand)
+- [@dnd-kit](https://docs.dndkit.com/)
+ 
+ ---
+ 
+ *本文档用于描述架构主线；新增组件或修改关键数据流时请同步更新。*

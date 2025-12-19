@@ -1,26 +1,6 @@
 # LiteTravel Backend API
 
-FastAPI 后端服务，提供用户认证和行程计划持久化存储。
-
-## 前端设计系统 (v2.2)
-
-前端采用高端美学设计，统一使用 **Zinc 深色主题** + **Emerald 强调色**：
-
-- **配色**: Zinc grays (bg-zinc-900, bg-zinc-950) + Emerald accents (emerald-500/600)
-- **边框**: 超细边框 `border-white/[0.04]` ~ `border-white/[0.08]`
-- **圆角**: 统一使用 `rounded-xl` / `rounded-2xl`
-- **字体**: 精细字号 `text-[11px]` ~ `text-[13px]`，tracking-tight
-- **动效**: 200-300ms 过渡，hover 状态变化
-- **玻璃态**: `backdrop-blur-xl` + 半透明背景
-
-### 核心 UI 组件
-
-| 组件 | 用途 |
-|------|------|
-| `AnalysisCard` | LLM 分析结果展示（景点/美食/住宿/交通） |
-| `ContextMenu` | 右键菜单（支持子菜单） |
-| `NodeCard` | 行程节点卡片 |
-| `AuthModal` | 登录/注册弹窗 |
+FastAPI 后端服务，提供用户认证、行程计划持久化、内容搜索与 LLM 分析能力。
 
 ## 技术栈
 
@@ -37,15 +17,9 @@ FastAPI 后端服务，提供用户认证和行程计划持久化存储。
 
 ### 前置条件
 
-确保已安装 [uv](https://docs.astral.sh/uv/):
+确保已安装 [uv](https://docs.astral.sh/uv/)。
 
-```bash
-# Windows (PowerShell)
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# macOS/Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
+更完整的启动/命令速查请看：`docs/COMMANDS.md`。
 
 ### 1. 安装依赖
 
@@ -79,32 +53,7 @@ uv run uvicorn main:app --reload --port 8000
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-## 常用 uv 命令
-
-```bash
-# 安装/同步依赖
-uv sync
-
-# 添加生产依赖
-uv add <package>
-
-# 添加开发依赖
-uv add --dev <package>
-
-# 运行 Python 脚本
-uv run python <script.py>
-
-# 运行测试
-uv run pytest
-
-# 代码检查
-uv run ruff check .
-
-# 更新依赖
-uv lock --upgrade
-```
-
-> ⚠️ **重要**: 禁止使用 `pip install` 或手动创建 `venv`，所有操作必须通过 `uv` 完成。
+说明：常用命令（启动/依赖/测试/检查）统一维护在 `docs/COMMANDS.md`。
 
 ## API 端点
 
@@ -163,7 +112,7 @@ POST /api/analyze/search
 {
     "keyword": "长沙美食",
     "city": "长沙",
-    "source": "mock",
+    "source": "auto",
     "limit": 5
 }
 ```
@@ -256,7 +205,7 @@ import { analyzeService } from './services/api/analyzeService';
 const response = await analyzeService.analyzeSearch({
   keyword: "长沙景点",
   city: "长沙",
-  source: "mock",  // 或 "xiaohongshu"
+  source: "auto",  // 默认：真实数据优先，失败自动降级到 mock
   limit: 5
 });
 
